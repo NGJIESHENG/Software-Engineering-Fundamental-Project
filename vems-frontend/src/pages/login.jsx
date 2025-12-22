@@ -14,6 +14,7 @@ function LoginPage(){
         maxWidth: '400px',
         margin: '100px auto',
         padding: '20px',
+        background: '#f7fafc',
         border: '1px solid #ddd',
         borderRadius: '8px',
         fontFamily: 'Arial',
@@ -41,36 +42,47 @@ function LoginPage(){
         marginTop: '10px',
     };
 
+    const backgroundstyle = {
+        Width: '100vw',
+        background: '#9be8ffff',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+    };
+
     return (
-        <div style={containerStyle}>
-            <h1 style={{ textAlign: 'center', color: '#2f855a'}}>VEMS Login</h1>
-            <form onSubmit={handleLogin}>
-                <label style={{ fontWeight: 'bold '}}>User ID</label>
-                <input 
-                    style={inputStyle}
-                    type="text"
-                    placeholder="Enter your ID (e.g. 243UC247D5)"
-                    value={userId}
-                    onChange={(e) => setUserId(e.target.value)}
-                    required/>
+        <div style={backgroundstyle}>
+            <div style={containerStyle}>
+                <h1 style={{ textAlign: 'center', color: '#2f855a'}}>VEMS Login</h1>
+                <form onSubmit={handleLogin}>
+                    <label style={{ fontWeight: 'bold '}}>User ID</label>
+                    <input 
+                        style={inputStyle}
+                        type="text"
+                        placeholder="Enter your ID (e.g. 243UC247D5)"
+                        value={userId}
+                        onChange={(e) => setUserId(e.target.value)}
+                        required/>
 
-                <label style={{ fontWeight: 'bold'}}>Password</label>
-                < input
-                    style={inputStyle}
-                    type="password"
-                    placeholder="Enter password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required/>
+                    <label style={{ fontWeight: 'bold'}}>Password</label>
+                    < input
+                        style={inputStyle}
+                        type="password"
+                        placeholder="Enter password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required/>
 
-                <button type="submit" style={buttonStyle}>
-                    Sign In
-                </button>
+                    <button type="submit" style={buttonStyle}>
+                        Sign In
+                    </button>
 
-                <p style={{ textAlign: 'center', fontSize: '14px', marginTop: '15px'}}>
-                    Don't have an account ? <a href="/" style={{ color:'#2b6cb0'}}>Register here</a>
-                </p>
-            </form>
+                    <p style={{ textAlign: 'center', fontSize: '14px', marginTop: '15px'}}>
+                        Don't have an account ? <a href="/" style={{ color:'#2b6cb0'}}>Register here</a>
+                    </p>
+                </form>
+            </div>
         </div>
     );
 }
