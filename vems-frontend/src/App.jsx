@@ -1,8 +1,9 @@
 import RegisterPage from './pages/register';
+import LoginPage from './pages/login';
 
 function App() {
   return (
-    <RegisterPage />
+    <LoginPage />
   );
 }
 

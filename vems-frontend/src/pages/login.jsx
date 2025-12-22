@@ -1,0 +1,78 @@
+import React from 'react';
+import {useState} from 'react';
+
+function LoginPage(){
+    const [userId, setUserId] = useState('');
+    const [password,setPasswprd] = useState('');
+
+    const handleLogin = (e)=> {
+        e.preventDefault();
+        alert(`Login Ateempt \nUser ID: ${userId}\nStatus: Authenticating...`);
+    };
+
+    const containerStyle = {
+        maxWidth: '400px',
+        margin: '100px auto',
+        padding: '20px',
+        border: '1px solid #ddd',
+        borderRadius: '8px',
+        fontFamily: 'Arial',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+    };
+
+    const inputStyle = {
+        width: '100%',
+        padding: '10px',
+        margin: '10px 0',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        boxSizing: 'border-box'
+    };
+
+    const buttonStyle = {
+        width:'100%',
+        padding: '12px',
+        background: '#38a169',
+        color: 'white',
+        border:'none',
+        borderRadius:'4px',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        marginTop: '10px',
+    };
+
+    return (
+        <div style={containerStyle}>
+            <h1 style={{ textAlign: 'center', color: '#2f855a'}}>VEMS Login</h1>
+            <form onSubmit={handleLogin}>
+                <label style={{ fontWeight: 'bold '}}>User ID</label>
+                <input 
+                    style={inputStyle}
+                    type="text"
+                    placeholder="Enter your ID (e.g. 243UC247D5)"
+                    value={userId}
+                    onChange={(e) => setUserId(e.target.value)}
+                    required/>
+
+                <label style={{ fontWeight: 'bold'}}>Password</label>
+                < input
+                    style={inputStyle}
+                    type="password"
+                    placeholder="Enter password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required/>
+
+                <button type="submit" style={buttonStyle}>
+                    Sign In
+                </button>
+
+                <p style={{ textAlign: 'center', fontSize: '14px', marginTop: '15px'}}>
+                    Don't have an account ? <a href="/" style={{ color:'#2b6cb0'}}>Register here</a>
+                </p>
+            </form>
+        </div>
+    );
+}
+
+export default LoginPage;
