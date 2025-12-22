@@ -3,7 +3,7 @@ import {useState} from 'react';
 
 function LoginPage(){
     const [userId, setUserId] = useState('');
-    const [password,setPasswprd] = useState('');
+    const [password,setPassword] = useState('');
 
     const handleLogin = (e)=> {
         e.preventDefault();
