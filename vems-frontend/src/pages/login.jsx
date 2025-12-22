@@ -43,12 +43,12 @@ function LoginPage(){
     };
 
     const backgroundstyle = {
-        Width: '100vw',
+        Width: '500px',
         background: '#9be8ffff',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        height: '100vh',
+        height: '720px',
     };
 
     return (
