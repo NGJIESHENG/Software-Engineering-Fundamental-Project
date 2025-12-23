@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function RegisterPage() {
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -11,6 +13,7 @@ function RegisterPage() {
     const handleRegister = (e) => {
         e.preventDefault();
         alert(`Account Created for ${formData.name}! Role: ${formData.role}`);
+        navigate('/Login');
     };
 
     const inputStyle = {

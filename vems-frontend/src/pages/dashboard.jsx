@@ -28,7 +28,7 @@ function Dashboard() {
         border: '1px solid #ddd'
     };
 
-    // return must be inside the function braces
+    
     return (
         <div style={{ padding: '40px', maxWidth: '1000px', margin: '0 auto' }}>
             <h1 style={{ color: '#2b6cb0' }}>Venue Availability</h1>

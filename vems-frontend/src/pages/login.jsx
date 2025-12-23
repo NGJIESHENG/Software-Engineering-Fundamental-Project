@@ -1,12 +1,15 @@
 import React from 'react';
 import {useState} from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function LoginPage(){
     const [userId, setUserId] = useState('');
     const [password,setPassword] = useState('');
+    const navigate = useNavigate();
 
     const handleLogin = (e)=> {
         e.preventDefault();
+        navigate('/dashboard')
         alert(`Login Ateempt \nUser ID: ${userId}\nStatus: Authenticating...`);
     };
 
