@@ -7,6 +7,7 @@ function RegisterPage() {
         name: '',
         email: '',
         userId: '',
+        password: '',
         role: 'Student'
     });
 
@@ -17,7 +18,7 @@ function RegisterPage() {
     };
 
     const inputStyle = {
-        width: '100%',
+        width: '95%',
         padding: '10px',
         margin: '10px 0',
         borderRadius: '4px',
@@ -41,7 +42,7 @@ function RegisterPage() {
                 <input style={inputStyle} type="password" placeholder="Enter password" onChange={(e) => setFormData({...formData, password: e.target.value})}required />
 
                 <label>User Role</label>
-                <select style={inputStyle} onChange={(e) => setFormData({...formData, role: e.target.value})}>
+                <select style={{...inputStyle, width:'100%'}} onChange={(e) => setFormData({...formData, role: e.target.value})}>
                     <option value="Student">Student</option>
                     <option value="Lecturer">Lecturer</option>
                     <option value="Event Organizer">Event Organizer</option>
