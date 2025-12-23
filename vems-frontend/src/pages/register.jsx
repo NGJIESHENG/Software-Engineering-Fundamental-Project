@@ -37,6 +37,9 @@ function RegisterPage() {
                 <label>Email</label>
                 <input style={inputStyle} type="email" placeholder="mmu@email.com" onChange={(e) => setFormData({...formData, email: e.target.value})} required />
 
+                <label>Password</label>
+                <input style={inputStyle} type="password" placeholder="Enter password" onChange={(e) => setFormData({...formData, password: e.target.value})}required />
+
                 <label>User Role</label>
                 <select style={inputStyle} onChange={(e) => setFormData({...formData, role: e.target.value})}>
                     <option value="Student">Student</option>
