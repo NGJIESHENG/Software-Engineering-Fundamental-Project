@@ -9,7 +9,7 @@ function LoginPage(){
 
     const handleLogin = (e)=> {
         e.preventDefault();
-        navigate('/dashboard')
+        navigate('/homepage')
         alert(`Login Ateempt \nUser ID: ${userId}\nStatus: Authenticating...`);
     };
 
