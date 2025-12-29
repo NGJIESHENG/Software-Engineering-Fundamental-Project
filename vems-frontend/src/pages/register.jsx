@@ -56,6 +56,9 @@ function RegisterPage() {
                         <option value="Lecturer">Lecturer</option>
                         <option value="Event Organizer">Event Organizer</option>
                     </select>
+                    <p style={{ textAlign: 'center', fontSize: '14px', marginTop: '15px'}}>
+                        Already have account ? <a href="/login" style={{ color:'#2b6cb0'}}>Click here</a>
+                    </p>
                     <button type="submit" style={{ width: '100%', padding: '12px', background: '#3182ce', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
                         Register Account
                     </button>
