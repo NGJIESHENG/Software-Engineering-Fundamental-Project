@@ -46,8 +46,8 @@ function LoginPage(){
     };
 
     const backgroundstyle = {
-        Width: '500px',
-        background: '#9be8ffff',
+        width: '100%',
+        background: 'linear-gradient(135deg, #2419F0, #6F58FF)',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
