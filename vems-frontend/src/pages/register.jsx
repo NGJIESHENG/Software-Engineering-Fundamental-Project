@@ -11,10 +11,30 @@ function RegisterPage() {
         role: 'Student'
     });
 
-    const handleRegister = (e) => {
+    const handleRegister = async (e) => { 
         e.preventDefault();
-        alert(`Account Created for ${formData.name}! Role: ${formData.role}`);
-        navigate('/login');
+        
+        try {
+            const response = await fetch('http://localhost:5000/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(`Account created for ${formData.name}!`);
+                navigate('/login');
+            } else {
+                alert(`Registration failed: ${data.message}`);
+            }
+        } catch (error) {
+            console.error("Connection error:", error);
+            alert("Could not connect to the server. Make sure your Flask app is running!");
+        }
     };
 
     const inputStyle = {
