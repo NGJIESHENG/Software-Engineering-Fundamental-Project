@@ -102,7 +102,7 @@ function Homepage() {
             id: 3, 
             name: 'User Profile', 
             icon: '👤',
-            path: '/profile',
+            path: '/user-profile',
             description: 'Manage your account and settings'
         },
         { 
@@ -123,7 +123,7 @@ function Homepage() {
             id: 6, 
             name: 'My Booking', 
             icon: '📋',
-            path: '/mybooking',
+            path: '/my-booking',
             description: 'Track and manage your bookings'
         },
     ];
