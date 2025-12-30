@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from flask_login import LoginManager
+from flask_login import LoginManager, login_user
 import os
 
 app = Flask(__name__)
@@ -63,7 +63,7 @@ def login():
         if not existing_user:
             return jsonify({"message": "User ID or password incorrect."}), 401
         else:
-            
+            #login_user(user_id)
             return jsonify({"message": "User login successfully!"}), 202
     except Exception as e:
         print(f"Databse Error: {e}")
