@@ -1,19 +1,22 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+import os
 
 app = Flask(__name__)
+basedir = os.path.abspath(os.path.dirname(__file__))
 CORS(app)
 
-app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///vems.db'
+app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(basedir,'vems.db')
 db = SQLAlchemy(app)
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    userId = db.Column(db.string(20), unique=True, nullable=False)
-    name = db.Column(db.string(100), nullable=False)
-    email = db.Column(db.string(100), unique=True, nullable=False)
-    role = db.Column(db.string(50), nullable=False)
+    userId = db.Column(db.String(20), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+    role = db.Column(db.String(50), nullable=False)
 
 class Venue(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -27,15 +30,23 @@ with app.app_context():
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.json
-    new_user = User(
-        userId=data['userId'],
-        name=data['name'],
-        email=data['email'],
-        role=data['role']
-    )
-    db.session.add(new_user)
-    db.session.commit()
-    return jsonify({"message: User registered successfully!"}), 201
+    existing_user=User.query.filter_by(userId=data['userId']).first()
+    if existing_user:
+         return jsonify({"message": "User ID already taken"}),400
+    try:
+        new_user = User(
+            userId=data['userId'],
+            name=data['name'],
+            email=data['email'],
+            password=data['password'],
+            role=data['role']
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({"message": "User registered successfully!"}), 201
+    except Exception as e:
+        print(f"Databse Error: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
 
 if __name__=='__main__':
-    app.run(debug=True, port=5000)
+        app.run(debug=True, port=5000)
