@@ -7,10 +7,30 @@ function LoginPage(){
     const [password,setPassword] = useState('');
     const navigate = useNavigate();
 
-    const handleLogin = (e)=> {
+    const handleLogin = async (e)=> {
         e.preventDefault();
-        navigate('/homepage')
-        alert(`Login Ateempt \nUser ID: ${userId}\nStatus: Authenticating...`);
+        alert(`Login Attempt \nUser ID: ${userId}\nStatus: Authenticating...`);
+        try {
+            const response = await fetch('http://localhost:5000/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({userId, password}),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert(`Logged into ${userId}!`);
+                navigate('/homepage');
+            } else {
+                alert(`Login failed: ${data.message}`);
+            }
+        } catch (error) {
+            console.error("Connection error:", error);
+            alert("Could not connect to the server.");
+        }
     };
 
     const containerStyle = {
@@ -82,7 +102,7 @@ function LoginPage(){
                     </button>
 
                     <p style={{ textAlign: 'center', fontSize: '14px', marginTop: '15px'}}>
-                        Don't have an account ? <a href="/" style={{ color:'#2b6cb0'}}>Register here</a>
+                        Don't have an account ? <a href="/register" style={{ color:'#2b6cb0'}}>Register here</a>
                     </p>
                 </form>
             </div>
