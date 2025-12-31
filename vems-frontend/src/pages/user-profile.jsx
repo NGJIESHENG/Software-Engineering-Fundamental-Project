@@ -59,8 +59,15 @@ const cardStyle = {
 
 const contentStyle = {
   padding: '30px',
-  lineHeight: '6',
+  lineHeight: '4.7',
 };
+
+const backstyle = {
+  color: '#00bbf5ff' ,
+  fontsize:'10',
+  paddingLeft: '600px',
+flexDirection: 'bottom',
+}
 
 return (
   <div style={backgroundstyle}>
@@ -92,6 +99,7 @@ return (
       </p>
       <p><strong>Role:</strong> {userData.role}</p>
       </div>
+      <a href="/homepage" style={{ ...backstyle}}>Back</a>
     </div>
   </div>
 
