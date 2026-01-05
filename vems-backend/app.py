@@ -20,6 +20,7 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
     role = db.Column(db.String(50), nullable=False)
+    phone = db.Column(db.String(20),nullable=True)
 
 class Venue(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -46,7 +47,8 @@ def register():
             name=data['name'],
             email=data['email'],
             password=data['password'],
-            role=data['role']
+            role=data['role'],
+            phone='',
         )
         db.session.add(new_user)
         db.session.commit()
@@ -63,8 +65,7 @@ def login():
         if not existing_user:
             return jsonify({"message": "User ID or password incorrect."}), 401
         else:
-            
-            return jsonify({"message": "User login successfully!"}), 202
+            return jsonify({"message": "User login successfully!","id": existing_user.id, "userId":existing_user.userId, "name": existing_user.name, "email": existing_user.email, "role": existing_user.role, "phone": existing_user.phone}), 200
     except Exception as e:
         print(f"Databse Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
