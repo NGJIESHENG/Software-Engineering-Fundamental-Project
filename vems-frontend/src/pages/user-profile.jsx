@@ -21,7 +21,7 @@ useEffect(() => {
 
 
 const handle_Edit = () => {
-  set_temp_Phone(userData.phone);
+  set_temp_Phone(userData.phone || '');
   set_editing_Phone(true);
 };
 
@@ -48,6 +48,7 @@ const backgroundstyle = {
 
 const cardStyle = {
   width: '95%',
+  mixWidth: '700px',
   height: '85%',
   backgroundColor: '#f7fafc',
   border: '5px solid #ccc',
@@ -64,9 +65,9 @@ const contentStyle = {
 
 const backstyle = {
   color: '#00bbf5ff' ,
-  fontsize:'10',
+  fontSize:'10',
   paddingLeft: '600px',
-flexDirection: 'bottom',
+  alignSelf: 'flex-end',
 }
 
 return (
@@ -78,6 +79,7 @@ return (
       <div style ={contentStyle}>
       <p><strong>Username:</strong> {userData.username}</p>
       <p><strong>User ID:</strong> {userData.user_ID}</p>
+      <p><strong>Email:</strong>{userData.email}</p>
       <p>
         <strong>Phone:</strong>
         {editing_Phone ? (

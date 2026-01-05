@@ -22,6 +22,14 @@ function LoginPage(){
             const data = await response.json();
 
             if (response.ok) {
+                const userData = {
+                    username: data.name,
+                    user_ID: data.userId,
+                    email: data.email,
+                    phone: data.phone,
+                    role: data.role,
+                };
+                localStorage.setItem('userData', JSON.stringify(userData));
                 alert(`Logged into ${userId}!`);
                 navigate('/homepage');
             } else {
