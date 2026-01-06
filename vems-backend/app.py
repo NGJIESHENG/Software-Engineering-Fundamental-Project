@@ -8,7 +8,7 @@ app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
 login_manager = LoginManager()
 login_manager.init_app(app)
-CORS(app)
+CORS(app,resources = {r"/api/*":{"origins":"*"}})
 
 app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(basedir,'vems.db')
 db = SQLAlchemy(app)
@@ -20,7 +20,7 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
     role = db.Column(db.String(50), nullable=False)
-    phone = db.Column(db.String(20),nullable=True)
+    phone = db.Column(db.String(10),nullable=True)
 
 class Venue(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -33,7 +33,7 @@ with app.app_context():
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.get(user_id)
+    return User.query.get(user_id)
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -48,7 +48,7 @@ def register():
             email=data['email'],
             password=data['password'],
             role=data['role'],
-            phone='',
+            phone=data.get('phone',''),
         )
         db.session.add(new_user)
         db.session.commit()
@@ -70,5 +70,23 @@ def login():
         print(f"Databse Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
+
+
+@app.route ('/api/update_phone',methods = ['POST'])
+def update_phone():
+    data = request.json
+    existing_user = User.query.filter_by(userId=data['userId']).first()
+    try:
+        if not existing_user:
+            return jsonify({"message": "User not found."}), 404
+        else:
+            existing_user.phone = data['phone']
+            db.session.commit()
+            return jsonify({"message": "Phone number updated successfully!"}), 200
+    except Exception as e:
+        print(f"Database Error: {e}")
+        db.session.rollback()
+        return jsonify({"message": "Internal Server Error"}), 500
+    
 if __name__=='__main__':
-        app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000)

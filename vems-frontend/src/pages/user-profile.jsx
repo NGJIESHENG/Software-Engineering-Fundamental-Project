@@ -11,6 +11,8 @@ const [userData, setUserData]= useState({
 
 const [editing_Phone, set_editing_Phone] = useState(false);
 const[temp_Phone, set_temp_Phone] = useState('');
+const [loading, setLoading] = useState(false);
+const [message, setMessage] = useState('');
 
 useEffect(() => {
   const storedUserData = JSON.parse(localStorage.getItem('userData'));
@@ -25,11 +27,36 @@ const handle_Edit = () => {
   set_editing_Phone(true);
 };
 
-const handle_save = () => {
-  const updatedUserData = {...userData, phone: temp_Phone};
-  setUserData(updatedUserData);
-  localStorage.setItem('userData', JSON.stringify(updatedUserData));
-  set_editing_Phone(false);
+const handle_save = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setMessage('');
+  try {
+    const response = await fetch('http://localhost:5000/api/update_phone', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+         body: JSON.stringify({
+        userId: userData.user_ID,
+        phone: temp_Phone,
+      }),
+      });
+    const data = await response.json();
+    if (response.ok) {
+      const updatedUserData = { ...userData, phone: temp_Phone };
+      setUserData(updatedUserData);
+      localStorage.setItem('userData', JSON.stringify(updatedUserData));
+      set_editing_Phone(false);
+      setMessage('Phone updated successfully!');
+    } else {
+      setMessage(data.message || 'Failed to update phone');
+    }
+  } catch (error) {
+    console.error('Error updating phone:', error);
+    setMessage('Error connecting to server');
+  }
+  setLoading(false);
 };
 
 const backgroundstyle = {
@@ -48,7 +75,7 @@ const backgroundstyle = {
 
 const cardStyle = {
   width: '95%',
-  mixWidth: '700px',
+  maxWidth: '700px',
   height: '85%',
   backgroundColor: '#f7fafc',
   border: '5px solid #ccc',
