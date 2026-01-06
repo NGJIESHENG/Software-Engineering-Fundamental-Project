@@ -82,7 +82,8 @@ const cardStyle = {
   borderRadius: '10px',
   display: 'flex',
   flexDirection: 'column',
-  margin:'25px'
+  margin:'25px',
+  padding:'10px'
 };
 
 const contentStyle = {
