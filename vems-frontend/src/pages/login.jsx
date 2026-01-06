@@ -74,12 +74,10 @@ function LoginPage(){
     };
 
     const backgroundstyle = {
-        width: '100%',
+        minHeight: '100vh',
         background: 'linear-gradient(135deg, #2419F0, #6F58FF)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '720px',
+        padding: '40px 20px',
+        fontFamily: 'Arial, sans-serif'
     };
 
     return (
