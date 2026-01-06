@@ -7,6 +7,7 @@ import UserProfile from './pages/user-profile';
 import Calendar from './pages/calendar';
 import Mybooking from './pages/my-booking';
 import Booking from './pages/booking';
+import BookingForm from './pages/bookingform';
 import Help from './pages/help';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
     <Route path="/my-booking" element={<Mybooking/>}/>
     <Route path="/booking" element={<Booking/>}/>
     <Route path="/help" element={<Help/>}/>
+    <Route path="/bookingform" element={<BookingForm/>}/>
     <Route path="*" element={<Navigate to="/" />}/>
     </Routes>
   );
