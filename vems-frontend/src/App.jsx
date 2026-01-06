@@ -21,6 +21,7 @@ function App() {
     <Route path="/my-booking" element={<Mybooking/>}/>
     <Route path="/booking" element={<Booking/>}/>
     <Route path="/help" element={<Help/>}/>
+    <Route path="/test" element={<Help/>}/>
     <Route path="*" element={<Navigate to="/" />}/>
     </Routes>
   );

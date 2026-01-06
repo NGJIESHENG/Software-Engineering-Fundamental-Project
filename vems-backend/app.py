@@ -1,19 +1,27 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from flask_login import LoginManager, login_user
+from flask_login import LoginManager, login_user, logout_user, current_user, UserMixin
+from flask_bcrypt import Bcrypt
+from flask_session import Session
 import os
 
 app = Flask(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
 login_manager = LoginManager()
 login_manager.init_app(app)
+bcrypt = Bcrypt(app)
+server_session = Session(app)
 CORS(app,resources = {r"/api/*":{"origins":"*"}})
+app.secret_key = 'supersecretkey'
+
+SESSION_TYPE = 'filesystem'
+SESSION_PERMANENT = False
 
 app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(basedir,'vems.db')
 db = SQLAlchemy(app)
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     userId = db.Column(db.String(20), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
@@ -39,6 +47,8 @@ def load_user(user_id):
 def register():
     data = request.json
     existing_user=User.query.filter_by(userId=data['userId']).first()
+    pw = data['password']
+    hashed_pw = bcrypt.generate_password_hash(pw)
     if existing_user:
          return jsonify({"message": "User ID already taken"}),400
     try:
@@ -46,7 +56,7 @@ def register():
             userId=data['userId'],
             name=data['name'],
             email=data['email'],
-            password=data['password'],
+            password=hashed_pw,
             role=data['role'],
             phone=data.get('phone',''),
         )
@@ -60,18 +70,24 @@ def register():
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
-    existing_user = User.query.filter_by(userId=data['userId'], password=data['password']).first()
+    user = User.query.filter_by(userId=data['userId']).first()
+    pw = data['password']
     try:
-        if not existing_user:
-            return jsonify({"message": "User ID or password incorrect."}), 401
+        if bcrypt.check_password_hash(user.password, pw):
+            login_user(user)
+            if user.role == "Admin":
+                current_user.role = "admin"
+            return jsonify({"message": "${user} login successfully!"}), 202
         else:
-            #login_user(user_id)
-            return jsonify({"message": "User login successfully!"}), 202
+            return jsonify({"message": "User ID or password incorrect."}), 401
     except Exception as e:
         print(f"Databse Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
-
+@app.route('/api/logout')
+def logout():
+    logout_user()
+    return "User logout successfully!", 203
 
 @app.route ('/api/update_phone',methods = ['POST'])
 def update_phone():
@@ -88,6 +104,6 @@ def update_phone():
         print(f"Database Error: {e}")
         db.session.rollback()
         return jsonify({"message": "Internal Server Error"}), 500
-    
+
 if __name__=='__main__':
     app.run(debug=True, port=5000)

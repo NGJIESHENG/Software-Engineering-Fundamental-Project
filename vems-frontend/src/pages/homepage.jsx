@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 function Homepage() {
     const navigate = useNavigate();
+    navigate('/api/user_auth')
 
     const backgroundStyle = {
         width: '100%',
@@ -125,6 +126,13 @@ function Homepage() {
             icon: '📋',
             path: '/my-booking',
             description: 'Track and manage your bookings'
+        },
+        { 
+            id: 7, 
+            name: 'Logout', 
+            icon: '🏃',
+            path: 'http://localhost:5000//api/logout',
+            description: 'Log out of your account'
         },
     ];
 
