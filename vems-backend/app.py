@@ -7,6 +7,8 @@ from flask_session import Session
 import os
 
 app = Flask(__name__)
+app.config['SESSION_TYPE']='filesystem'
+app.config['SECRET_KEY'] = 'your_very_secret_key_here'
 basedir = os.path.abspath(os.path.dirname(__file__))
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -88,6 +90,14 @@ def login():
 def logout():
     logout_user()
     return "User logout successfully!", 203
+
+@app.route('/test')
+def test():
+    if current_user.is_authenticated:
+        return 'Yes'
+    else:
+        return 'No'
+        
 
 @app.route ('/api/update_phone',methods = ['POST'])
 def update_phone():
