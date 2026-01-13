@@ -30,7 +30,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
     role = db.Column(db.String(50), nullable=False)
-    phone = db.Column(db.String(10),nullable=True)
+    phone = db.Column(db.String(20),nullable=True)
 
 class Venue(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -115,9 +115,10 @@ def update_phone():
             db.session.commit()
             return jsonify({"message": "Phone number updated successfully!"}), 200
     except Exception as e:
+        print(f"Database Error: {e}")
         db.session.rollback()
         return jsonify({"message": "Internal Server Error"}), 500
-        print(f"Database Error: {e}")
+
 
 if __name__=='__main__':
     app.run(debug=True, port=5000)
