@@ -68,11 +68,12 @@ const backgroundstyle = {
         background: 'linear-gradient(135deg, #2419F0, #6F58FF)',
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'stretch',
-        height: '97.8vh',
+        alignItems: 'center',
+        height: 'auto',
+        minHeight: '97vh',
     };
   
-  const headerstyle = {
+const headerstyle = {
   padding: '20px',
   flexShrink: 0,
 };
@@ -80,7 +81,8 @@ const backgroundstyle = {
 const cardStyle = {
   width: '95%',
   maxWidth: '700px',
-  height: '85%',
+  height: 'auto',
+  minHeight:'400px',
   backgroundColor: '#f7fafc',
   border: '5px solid #ccc',
   borderRadius: '10px',
@@ -92,7 +94,7 @@ const cardStyle = {
 
 const contentStyle = {
   padding: '30px',
-  lineHeight: '4.7',
+  lineHeight: '3.7',
 };
 
 const backstyle = {
