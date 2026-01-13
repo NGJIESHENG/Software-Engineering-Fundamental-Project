@@ -23,11 +23,11 @@ function LoginPage(){
 
             if (response.ok) {
                 const userData = {
-                    username: data.name,
-                    user_ID: data.userId,
-                    email: data.email,
-                    phone: data.phone,
-                    role: data.role,
+                    name: data.user.name,
+                    userId: data.user.userId,
+                    email: data.user.email,
+                    phone: data.user.phone,
+                    role: data.user.role,
                 };
                 localStorage.setItem('userData', JSON.stringify(userData));
                 alert(`Logged into ${userId}!`);
