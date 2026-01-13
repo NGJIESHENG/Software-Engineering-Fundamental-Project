@@ -30,7 +30,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
     role = db.Column(db.String(50), nullable=False)
-    phone = db.Column(db.String(10),nullable=True)
+    phone = db.Column(db.String(20),nullable=True)
 
 class Venue(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -75,11 +75,11 @@ def login():
     user = User.query.filter_by(userId=data['userId']).first()
     pw = data['password']
     try:
-        if bcrypt.check_password_hash(user.password, pw):
+        if user and bcrypt.check_password_hash(user.password, pw):
             login_user(user)
             if user.role == "Admin":
                 current_user.role = "admin"
-            return jsonify({"message": "${user} login successfully!"}), 202
+            return jsonify({"message": f"{user.name} login successfully!","user": {"name": user.name, "userId": user.userId, "email": user.email, "role": user.role, "phone": user.phone}}), 200
         else:
             return jsonify({"message": "User ID or password incorrect."}), 401
     except Exception as e:
@@ -102,18 +102,23 @@ def test():
 @app.route ('/api/update_phone',methods = ['POST'])
 def update_phone():
     data = request.json
-    existing_user = User.query.filter_by(userId=data['userId']).first()
+    user_id = data.get('userId')
+    if not user_id:
+        return jsonify({"message": "User ID is required"}), 400
+    else:
+        user = User.query.filter_by(userId=user_id).first()
     try:
-        if not existing_user:
+        if not user:
             return jsonify({"message": "User not found."}), 404
         else:
-            existing_user.phone = data['phone']
+            user.phone = data.get('phone', '')
             db.session.commit()
             return jsonify({"message": "Phone number updated successfully!"}), 200
     except Exception as e:
         print(f"Database Error: {e}")
         db.session.rollback()
         return jsonify({"message": "Internal Server Error"}), 500
+
 
 if __name__=='__main__':
     app.run(debug=True, port=5000)

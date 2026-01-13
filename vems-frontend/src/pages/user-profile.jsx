@@ -1,9 +1,11 @@
 import React, {useState, useEffect} from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function UserProfile() {
+const navigate = useNavigate();
 const [userData, setUserData]= useState({
-  username: '',
-  user_ID: '',
+  name: '',
+  userId: '',
   email: '',
   phone: '',
   role: '',
@@ -18,8 +20,10 @@ useEffect(() => {
   const storedUserData = JSON.parse(localStorage.getItem('userData'));
   if (storedUserData) {
     setUserData(storedUserData);
+  }else{
+    navigate('/login');
   }
-}, []);
+}, [navigate]);
 
 
 const handle_Edit = () => {
@@ -37,8 +41,8 @@ const handle_save = async (e) => {
       headers: {
         'Content-Type': 'application/json',
       },
-         body: JSON.stringify({
-        userId: userData.user_ID,
+        body: JSON.stringify({
+        userId: userData.userId,
         phone: temp_Phone,
       }),
       });
@@ -105,8 +109,8 @@ return (
         <h2>User Profile</h2> 
       </div>
       <div style ={contentStyle}>
-      <p><strong>Username:</strong> {userData.username}</p>
-      <p><strong>User ID:</strong> {userData.user_ID}</p>
+      <p><strong>Username:</strong> {userData.name}</p>
+      <p><strong>User ID:</strong> {userData.userId}</p>
       <p><strong>Email:</strong>{userData.email}</p>
       <p>
         <strong>Phone:</strong>
