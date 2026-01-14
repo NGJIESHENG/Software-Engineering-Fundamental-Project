@@ -14,7 +14,7 @@ const backgroundstyle = {
 };
 const headerstyle = {
   padding: '5px',
-  color : 'white',
+  color : '#ffffff',
   textAlign:'center'
 };
 const cardStyle = {
@@ -31,29 +31,37 @@ const cardStyle = {
   padding:'20px',
 };
 const Style = {
-  questionstyle:{
-    fontWeight: 'bold',
-    padding: '5px',
-  },
   question:{
-
+    backgroundColor:'#5e5d5d',
+    padding:'15px',
+    borderRadius:'1px',
   },
   answer:{
-
+    backgroundColor:'#d7d7d7',
+    padding:'15px',
+    border: '1px solid #7c7c7c',
+    marginBottom: '20px',
   },
 };
 return (
-<div style={backgroundstyle}>
-    <div style ={headerstyle}>
-        <h1>Help Centre</h1>
-    </div>
-    <div style={{...cardStyle}}>
-        <div style ={Style.questionstyle}>
-            <h3>Frequently Asked Questions</h3>
-            <p><strong>Login Issues:</strong> Ensure your User ID and Password match.</p>
-            <p><strong>Profile:</strong> Update your phone number in the User Profile section.</p>
-        </div>
-    </div>
+  <div style={backgroundstyle}>
+      <div style ={headerstyle}>
+          <h1>Help Centre</h1>
+      </div>
+      <div style={{...cardStyle}}>
+          <div>
+            <div style={Style.question}>How do I update my phone number?</div>
+            <div style={Style.answer}>
+              Go to your User Profile page and click the "Edit" button next to your phone number.
+            </div>
+          </div>
+          <div>
+            <div style={Style.question}>Why is my Username blank?</div>
+            <div style={Style.answer}>
+              Please log out and log back in to refresh your account details.
+            </div>
+      </div>
+  </div>
 </div>
 );
 }
