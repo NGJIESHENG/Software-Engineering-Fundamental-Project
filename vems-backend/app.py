@@ -24,21 +24,12 @@ app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(basedir,'vems.db
 db = SQLAlchemy(app)
 
 class User(db.Model, UserMixin):
-<<<<<<< HEAD
-    id = db.Column(db.Integer, primary_key=True)
-    userId = db.Column(db.String(20), unique=True, nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.String(50), nullable=False)
-    phone = db.Column(db.String(20),nullable=True)
-=======
     
     User_ID = db.Column(db.String(20), unique=True,  primary_key=True)
     Name = db.Column(db.String(100), nullable=False)
     Email = db.Column(db.String(100), unique=True, nullable=False)
     Password = db.Column(db.String(100), nullable=False)
-    RecursionErrorole = db.Column(db.String(50), nullable=False)
+    Role = db.Column(db.String(50), nullable=False)
     Phone = db.Column(db.String(10),nullable=True)
 
     bookings = db.relationship('Booking', backref='user_owner', lazy=True)
@@ -52,15 +43,14 @@ class Admin(db.Model):
     Password = db.Column(db.String(100), nullable=False)
 
     logs = db.relationship('RequestLog', backref='authorozer', lazy=True)
->>>>>>> 583d756 (Add all db and connect all table tgt)
 
 class Venue(db.Model):
-    Venue_Id = db.Column(db.Integer, primary_key=True)
+    Venue_ID = db.Column(db.Integer, primary_key=True)
     Venue_Name = db.Column(db.String(100), nullable=False)
     Capacity = db.Column(db.Integer, nullable=False)
     Status = db.Column(db.String(50), default='Available')
 
-    bookings = db.relationship('Bookinng', backref='location',lazy=True)
+    bookings = db.relationship('Booking', backref='location',lazy=True)
 
 class Booking(db.Model):
     __tablename__ = 'booking'
@@ -76,6 +66,31 @@ class Booking(db.Model):
 
     logs = db.relationship('RequestLog',backref='related_booking', lazy=True)
     events = db.relationship('ApprovedEvent', backref='source_booking', lazy=True)
+
+class RequestLog(db.Model):
+    __tablename__ = 'request_log'
+    Log_ID = db.Column(db.Integer,primary_key=True)
+    Booking_ID = db.Column(db.Integer, db.ForeignKey('booking.Booking_ID'), nullable =False)
+    Admin_ID = db.Column(db.Integer, db.ForeignKey('admin.Admin_ID'), nullable = False)
+    Action_Type = db.Column(db.String(50))
+    Action_Time = db.Column(db.String(20))
+    Reason_Notes = db.Column(db.String((255)))
+    Old_Status = db.Column(db.String(20))
+    New_Status = db.Column(db.String(20))
+
+class ApprovedEvent (db.Model):
+    __tablename__ = 'approved_event'
+    Event_ID = db.Column(db.Integer, primary_key=True)
+    User_ID = db.Column(db.String(20), db.ForeignKey('user.User_ID'), nullable = False)
+    Venue_ID = db.Column(db.Integer, db.ForeignKey('venue.Venue_ID'), nullable = False)
+    Booking_ID = db.Column(db.Integer, db.ForeignKey('booking.Booking_ID'), nullable = False)
+    Admin_ID = db.Column(db.String(20), db.ForeignKey('admin.Admin_ID'), nullable = False)
+    Event_Name = db.Column(db.String(100))
+    Description = db.Column(db.String(255))
+    Start_Time = db.Column(db.String(10))
+    End_Time = db.Column(db.String(10))
+
+
 
 with app.app_context():
     db.create_all()
@@ -114,11 +129,11 @@ def login():
     user = User.query.filter_by(userId=data['userId']).first()
     pw = data['password']
     try:
-        if user and bcrypt.check_password_hash(user.password, pw):
+        if bcrypt.check_password_hash(user.password, pw):
             login_user(user)
             if user.role == "Admin":
                 current_user.role = "admin"
-            return jsonify({"message": f"{user.name} login successfully!","user": {"name": user.name, "userId": user.userId, "email": user.email, "role": user.role, "phone": user.phone}}), 200
+            return jsonify({"message": "${user} login successfully!"}), 202
         else:
             return jsonify({"message": "User ID or password incorrect."}), 401
     except Exception as e:
@@ -136,23 +151,18 @@ def logout():
 @app.route ('/api/update_phone',methods = ['POST'])
 def update_phone():
     data = request.json
-    user_id = data.get('userId')
-    if not user_id:
-        return jsonify({"message": "User ID is required"}), 400
-    else:
-        user = User.query.filter_by(userId=user_id).first()
+    existing_user = User.query.filter_by(userId=data['userId']).first()
     try:
-        if not user:
+        if not existing_user:
             return jsonify({"message": "User not found."}), 404
         else:
-            user.phone = data.get('phone', '')
+            existing_user.phone = data['phone']
             db.session.commit()
             return jsonify({"message": "Phone number updated successfully!"}), 200
     except Exception as e:
         print(f"Database Error: {e}")
         db.session.rollback()
         return jsonify({"message": "Internal Server Error"}), 500
-
 
 if __name__=='__main__':
     app.run(debug=True, port=5000)
