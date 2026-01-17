@@ -4,11 +4,11 @@ import { useNavigate } from 'react-router-dom';
 function UserProfile() {
 const navigate = useNavigate();
 const [userData, setUserData]= useState({
-  name: '',
-  userId: '',
-  email: '',
-  phone: '',
-  role: '',
+  Name: '',
+  User_ID: '',
+  Email: '',
+  Phone: '',
+  Role: '',
 });
 
 const [editing_Phone, set_editing_Phone] = useState(false);
@@ -27,7 +27,7 @@ useEffect(() => {
 
 
 const handle_Edit = () => {
-  set_temp_Phone(userData.phone || '');
+  set_temp_Phone(userData.Phone || '');
   set_editing_Phone(true);
 };
 
@@ -42,22 +42,22 @@ const handle_save = async (e) => {
         'Content-Type': 'application/json',
       },
         body: JSON.stringify({
-        userId: userData.userId,
-        phone: temp_Phone,
+        User_ID: userData.User_ID,
+        Phone: temp_Phone,
       }),
       });
     const data = await response.json();
     if (response.ok) {
-      const updatedUserData = { ...userData, phone: temp_Phone };
+      const updatedUserData = { ...userData, Phone: temp_Phone };
       setUserData(updatedUserData);
       localStorage.setItem('userData', JSON.stringify(updatedUserData));
       set_editing_Phone(false);
       setMessage('Phone updated successfully!');
     } else {
-      setMessage(data.message || 'Failed to update phone');
+      setMessage(data.message || 'Failed to update Phone');
     }
   } catch (error) {
-    console.error('Error updating phone:', error);
+    console.error('Error updating Phone:', error);
     setMessage('Error connecting to server');
   }
   setLoading(false);
@@ -109,9 +109,9 @@ return (
         <h2>User Profile</h2> 
       </div>
       <div style ={contentStyle}>
-      <p><strong>Username:</strong> {userData.name}</p>
-      <p><strong>User ID:</strong> {userData.userId}</p>
-      <p><strong>Email:</strong>{userData.email}</p>
+      <p><strong>UserName:</strong> {userData.Name}</p>
+      <p><strong>User ID:</strong> {userData.User_ID}</p>
+      <p><strong>Email:</strong>{userData.Email}</p>
       <p>
         <strong>Phone:</strong>
         {editing_Phone ? (
@@ -126,12 +126,12 @@ return (
           </>
         ) : (
           <>
-            <span style={{ marginLeft: '10px' }}>{userData.phone || 'Not set'}</span>
+            <span style={{ marginLeft: '10px' }}>{userData.Phone || 'Not set'}</span>
             <button onClick={handle_Edit} style={{ marginLeft: '10px' }}>Edit</button>
           </>
         )}
       </p>
-      <p><strong>Role:</strong> {userData.role}</p>
+      <p><strong>Role:</strong> {userData.Role}</p>
       </div>
       <a href="/homepage" style={{ ...backstyle}}>Back</a>
     </div>

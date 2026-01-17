@@ -24,16 +24,16 @@ app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(basedir,'vems.db
 db = SQLAlchemy(app)
 
 class User(db.Model, UserMixin):
-    
     User_ID = db.Column(db.String(20), unique=True,  primary_key=True)
     Name = db.Column(db.String(100), nullable=False)
     Email = db.Column(db.String(100), unique=True, nullable=False)
     Password = db.Column(db.String(100), nullable=False)
     Role = db.Column(db.String(50), nullable=False)
-    Phone = db.Column(db.String(10),nullable=True)
-
+    Phone = db.Column(db.String(20),nullable=True)
     bookings = db.relationship('Booking', backref='user_owner', lazy=True)
     approved_event = db.relationship('ApprovedEvent', backref='organizer', lazy=True)
+    def get_id(self):
+        return self.User_ID
 
 class Admin(db.Model):
     __tablename__ = 'admin'
@@ -41,7 +41,6 @@ class Admin(db.Model):
     Name = db.Column(db.String(100), nullable=False)
     Email = db.Column(db.String(100), unique=True, nullable=False)
     Password = db.Column(db.String(100), nullable=False)
-
     logs = db.relationship('RequestLog', backref='authorozer', lazy=True)
 
 class Venue(db.Model):
@@ -49,7 +48,6 @@ class Venue(db.Model):
     Venue_Name = db.Column(db.String(100), nullable=False)
     Capacity = db.Column(db.Integer, nullable=False)
     Status = db.Column(db.String(50), default='Available')
-
     bookings = db.relationship('Booking', backref='location',lazy=True)
 
 class Booking(db.Model):
@@ -63,7 +61,6 @@ class Booking(db.Model):
     End_Time = db.Column(db.String(10))
     Description = db.Column(db.String(255))
     Booking_Status = db.Column(db.String(20), default='Pending')
-
     logs = db.relationship('RequestLog',backref='related_booking', lazy=True)
     events = db.relationship('ApprovedEvent', backref='source_booking', lazy=True)
 
@@ -96,44 +93,45 @@ with app.app_context():
     db.create_all()
 
 @login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(user_id)
+def load_user(User_ID):
+    return User.query.get(User_ID)
 
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.json
-    existing_user=User.query.filter_by(userId=data['userId']).first()
-    pw = data['password']
+    existing_user=User.query.filter_by(User_ID=data['User_ID']).first()
+    pw = data['Password']
     hashed_pw = bcrypt.generate_password_hash(pw)
     if existing_user:
          return jsonify({"message": "User ID already taken"}),400
     try:
         new_user = User(
-            userId=data['userId'],
-            name=data['name'],
-            email=data['email'],
-            password=hashed_pw,
-            role=data['role'],
-            phone=data.get('phone',''),
+            User_ID=data['User_ID'],
+            Name=data['Name'],
+            Email=data['Email'],
+            Password=hashed_pw,
+            Role=data['Role'],
+            Phone=data.get('Phone',''),
         )
         db.session.add(new_user)
         db.session.commit()
         return jsonify({"message": "User registered successfully!"}), 201
     except Exception as e:
         print(f"Databse Error: {e}")
+        db.session.rollback()
         return jsonify({"message": "Internal Server Error"}), 500
     
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
-    user = User.query.filter_by(userId=data['userId']).first()
-    pw = data['password']
+    user = User.query.filter_by(User_ID=data['User_ID']).first()
+    pw = data['Password']
     try:
-        if bcrypt.check_password_hash(user.password, pw):
+        if bcrypt.check_password_hash(user.Password, pw):
             login_user(user)
-            if user.role == "Admin":
-                current_user.role = "admin"
-            return jsonify({"message": "${user} login successfully!"}), 202
+            if user.Role == "Admin":
+                current_user.Role = "Admin"
+            return jsonify({"message": f"{user.Name} login successfully!","user": {"Name": user.Name, "User_ID": user.User_ID, "Email": user.Email, "Role": user.Role, "Phone": user.Phone}}), 200
         else:
             return jsonify({"message": "User ID or password incorrect."}), 401
     except Exception as e:
@@ -151,12 +149,16 @@ def logout():
 @app.route ('/api/update_phone',methods = ['POST'])
 def update_phone():
     data = request.json
-    existing_user = User.query.filter_by(userId=data['userId']).first()
+    User_ID = data.get('User_ID')
+    if not User_ID:
+        return jsonify({"message": "User ID is required"}), 400
+    else:
+        user = User.query.filter_by(User_ID=User_ID).first()
     try:
-        if not existing_user:
+        if not user:
             return jsonify({"message": "User not found."}), 404
         else:
-            existing_user.phone = data['phone']
+            User.Phone = data.get('Phone', '')
             db.session.commit()
             return jsonify({"message": "Phone number updated successfully!"}), 200
     except Exception as e:
