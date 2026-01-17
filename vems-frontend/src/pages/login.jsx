@@ -3,34 +3,34 @@ import {useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function LoginPage(){
-    const [userId, setUserId] = useState('');
-    const [password,setPassword] = useState('');
+    const [User_ID, setUser_ID] = useState('');
+    const [Password,setPassword] = useState('');
     const navigate = useNavigate();
 
     const handleLogin = async (e)=> {
         e.preventDefault();
-        alert(`Login Attempt \nUser ID: ${userId}\nStatus: Authenticating...`);
+        alert(`Login Attempt \nUser ID: ${User_ID}\nStatus: Authenticating...`);
         try {
             const response = await fetch('http://localhost:5000/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({userId, password}),
+                body: JSON.stringify({User_ID, Password}),
             });
 
             const data = await response.json();
 
             if (response.ok) {
                 const userData = {
-                    name: data.user.name,
-                    userId: data.user.userId,
-                    email: data.user.email,
-                    phone: data.user.phone,
-                    role: data.user.role,
+                    Name: data.user.Name,
+                    User_ID: data.user.User_ID,
+                    Email: data.user.Email,
+                    Phone: data.user.Phone,
+                    Role: data.user.Role,
                 };
                 localStorage.setItem('userData', JSON.stringify(userData));
-                alert(`Logged into ${userId}!`);
+                alert(`Logged into ${User_ID}!`);
                 navigate('/homepage');
             } else {
                 alert(`Login failed: ${data.message}`);
@@ -90,16 +90,16 @@ function LoginPage(){
                         style={inputStyle}
                         type="text"
                         placeholder="Enter your ID (e.g. 243UC247D5)"
-                        value={userId}
-                        onChange={(e) => setUserId(e.target.value)}
+                        value={User_ID}
+                        onChange={(e) => setUser_ID(e.target.value)}
                         required/>
 
                     <label style={{ fontWeight: 'bold'}}>Password</label>
                     < input
                         style={inputStyle}
-                        type="password"
-                        placeholder="Enter password"
-                        value={password}
+                        type="Password"
+                        placeholder="Enter Password"
+                        value={Password}
                         onChange={(e) => setPassword(e.target.value)}
                         required/>
 

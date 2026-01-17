@@ -4,11 +4,11 @@ import { useNavigate } from 'react-router-dom';
 function RegisterPage() {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        userId: '',
-        password: '',
-        role: 'Student'
+        Name: '',
+        Email: '',
+        User_ID: '',
+        Password: '',
+        Role: 'Student'
     });
 
     const handleRegister = async (e) => { 
@@ -26,7 +26,7 @@ function RegisterPage() {
             const data = await response.json();
 
             if (response.ok) {
-                alert(`Account created for ${formData.name}!`);
+                alert(`Account created for ${formData.Name}!`);
                 navigate('/login');
             } else {
                 alert(`Registration failed: ${data.message}`);
@@ -57,19 +57,19 @@ function RegisterPage() {
                 <h1 style={{ textAlign: 'center', color: '#2b6cb0' }}>VEMS Register</h1>
                 <form onSubmit={handleRegister}>
                     <label>Full Name</label>
-                    <input style={inputStyle} type="text" placeholder="Enter Name" onChange={(e) => setFormData({...formData, name: e.target.value})} required />
+                    <input style={inputStyle} type="text" placeholder="Enter Name" onChange={(e) => setFormData({...formData, Name: e.target.value})} required />
                     
                     <label>User ID</label>
-                    <input style={inputStyle} type="text" placeholder="e.g. 243UC247D5" onChange={(e) => setFormData({...formData, userId: e.target.value})} required />
+                    <input style={inputStyle} type="text" placeholder="e.g. 243UC247D5" onChange={(e) => setFormData({...formData, User_ID: e.target.value})} required />
 
                     <label>Email</label>
-                    <input style={inputStyle} type="email" placeholder="mmu@email.com" onChange={(e) => setFormData({...formData, email: e.target.value})} required />
+                    <input style={inputStyle} type="email" placeholder="mmu@email.com" onChange={(e) => setFormData({...formData, Email: e.target.value})} required />
 
                     <label>Password</label>
-                    <input style={inputStyle} type="password" placeholder="Enter password" onChange={(e) => setFormData({...formData, password: e.target.value})}required />
+                    <input style={inputStyle} type="password" placeholder="Enter password" onChange={(e) => setFormData({...formData, Password: e.target.value})}required />
 
                     <label>User Role</label>
-                    <select style={{...inputStyle, width:'100%'}} onChange={(e) => setFormData({...formData, role: e.target.value})}>
+                    <select style={{...inputStyle, width:'100%'}} onChange={(e) => setFormData({...formData, Role: e.target.value})}>
                         <option value="Student">Student</option>
                         <option value="Lecturer">Lecturer</option>
                         <option value="Event Organizer">Event Organizer</option>
