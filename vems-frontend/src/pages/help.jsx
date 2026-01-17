@@ -60,6 +60,7 @@ return (
             <div style={Style.answer}>
               Please log out and log back in to refresh your account details.
             </div>
+            <div style = {Style.question}></div>
       </div>
   </div>
 </div>
