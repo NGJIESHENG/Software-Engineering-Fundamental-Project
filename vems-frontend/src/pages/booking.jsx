@@ -11,6 +11,14 @@ function Booking() {
     const [timeError, setTimeError] = useState('');
 
     const styles = {
+        background: {
+            minHeight: '100vh',
+            background: 'linear-gradient(135deg, #237be0, #003590)',
+            padding: '20px',
+            justifyContent: 'center',
+            alignItems: 'center'
+        },
+
         container: {
             maxWidth: '1000px',
             margin: '40px auto',
@@ -391,6 +399,7 @@ function Booking() {
     };
     
     return (
+        <div style={styles.background}>
         <div style={styles.container}>
             <div style={styles.header}>
                 <h1 style={styles.title}>Campus Venue Booking System</h1>
@@ -540,6 +549,7 @@ function Booking() {
             >
                 Continue to Booking Form →
             </button>
+        </div>
         </div>
     );
 }

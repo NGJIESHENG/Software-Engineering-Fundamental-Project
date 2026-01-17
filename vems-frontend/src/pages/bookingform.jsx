@@ -20,6 +20,14 @@ function BookingForm() {
     const [errors, setErrors] = useState({});
 
     const styles = {
+        background: {
+            minHeight: '100vh',
+            background: 'linear-gradient(135deg, #237be0, #003590)',
+            padding: '20px',
+            justifyContent: 'center',
+            alignItems: 'center'
+        },
+
         container: {
             maxWidth: '900px',
             margin: '40px auto',
@@ -292,6 +300,7 @@ function BookingForm() {
     };
 
     return (
+        <div style={styles.background}>
         <div style={styles.container}>
             <div style={styles.header}>
                 <h1 style={styles.title}>Complete Your Booking</h1>
@@ -553,6 +562,7 @@ function BookingForm() {
                     </button>
                 </div>
             </form>
+        </div>
         </div>
     );
 }

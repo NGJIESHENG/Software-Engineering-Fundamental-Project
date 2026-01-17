@@ -8,7 +8,7 @@ function Homepage() {
     const styles = {
         background: {
             minHeight: '100vh',
-            background: 'linear-gradient(135deg, #2419F0, #6F58FF)',
+            background: 'linear-gradient(135deg, #237be0, #003590)',
             padding: '20px',
             display: 'flex',
             justifyContent: 'center',

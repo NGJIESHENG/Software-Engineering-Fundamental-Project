@@ -75,7 +75,7 @@ function LoginPage(){
 
     const backgroundstyle = {
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #2419F0, #6F58FF)',
+        background: 'linear-gradient(135deg, #E8F5E9, #C8E6C9)',
         padding: '40px 20px',
         fontFamily: 'Arial, sans-serif'
     };
