@@ -24,19 +24,73 @@ app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(basedir,'vems.db
 db = SQLAlchemy(app)
 
 class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    userId = db.Column(db.String(20), unique=True, nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.String(50), nullable=False)
-    phone = db.Column(db.String(10),nullable=True)
+    
+    User_ID = db.Column(db.String(20), unique=True,  primary_key=True)
+    Name = db.Column(db.String(100), nullable=False)
+    Email = db.Column(db.String(100), unique=True, nullable=False)
+    Password = db.Column(db.String(100), nullable=False)
+    Role = db.Column(db.String(50), nullable=False)
+    Phone = db.Column(db.String(10),nullable=True)
+
+    bookings = db.relationship('Booking', backref='user_owner', lazy=True)
+    approved_event = db.relationship('ApprovedEvent', backref='organizer', lazy=True)
+
+class Admin(db.Model):
+    __tablename__ = 'admin'
+    Admin_ID = db.Column(db.String(20), primary_key=True)
+    Name = db.Column(db.String(100), nullable=False)
+    Email = db.Column(db.String(100), unique=True, nullable=False)
+    Password = db.Column(db.String(100), nullable=False)
+
+    logs = db.relationship('RequestLog', backref='authorozer', lazy=True)
 
 class Venue(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    capacity = db.Column(db.Integer, nullable=False)
-    status = db.Column(db.String(50), default='Available')
+    Venue_ID = db.Column(db.Integer, primary_key=True)
+    Venue_Name = db.Column(db.String(100), nullable=False)
+    Capacity = db.Column(db.Integer, nullable=False)
+    Status = db.Column(db.String(50), default='Available')
+
+    bookings = db.relationship('Booking', backref='location',lazy=True)
+
+class Booking(db.Model):
+    __tablename__ = 'booking'
+    Booking_ID = db.Column(db.Integer,primary_key=True)
+    User_ID = db.Column(db.String(20), db.ForeignKey('user.User_ID'), nullable=False)
+    Venue_ID = db.Column(db.Integer, db.ForeignKey('venue.Venue_ID'), nullable=False)
+    Date = db.Column(db.String(20), nullable=False)
+    Submission_Date = db.Column(db.String(20))
+    Start_Time = db.Column(db.String(10))
+    End_Time = db.Column(db.String(10))
+    Description = db.Column(db.String(255))
+    Booking_Status = db.Column(db.String(20), default='Pending')
+
+    logs = db.relationship('RequestLog',backref='related_booking', lazy=True)
+    events = db.relationship('ApprovedEvent', backref='source_booking', lazy=True)
+
+class RequestLog(db.Model):
+    __tablename__ = 'request_log'
+    Log_ID = db.Column(db.Integer,primary_key=True)
+    Booking_ID = db.Column(db.Integer, db.ForeignKey('booking.Booking_ID'), nullable =False)
+    Admin_ID = db.Column(db.Integer, db.ForeignKey('admin.Admin_ID'), nullable = False)
+    Action_Type = db.Column(db.String(50))
+    Action_Time = db.Column(db.String(20))
+    Reason_Notes = db.Column(db.String((255)))
+    Old_Status = db.Column(db.String(20))
+    New_Status = db.Column(db.String(20))
+
+class ApprovedEvent (db.Model):
+    __tablename__ = 'approved_event'
+    Event_ID = db.Column(db.Integer, primary_key=True)
+    User_ID = db.Column(db.String(20), db.ForeignKey('user.User_ID'), nullable = False)
+    Venue_ID = db.Column(db.Integer, db.ForeignKey('venue.Venue_ID'), nullable = False)
+    Booking_ID = db.Column(db.Integer, db.ForeignKey('booking.Booking_ID'), nullable = False)
+    Admin_ID = db.Column(db.String(20), db.ForeignKey('admin.Admin_ID'), nullable = False)
+    Event_Name = db.Column(db.String(100))
+    Description = db.Column(db.String(255))
+    Start_Time = db.Column(db.String(10))
+    End_Time = db.Column(db.String(10))
+
+
 
 with app.app_context():
     db.create_all()
@@ -91,12 +145,7 @@ def logout():
     logout_user()
     return "User logout successfully!", 203
 
-@app.route('/test')
-def test():
-    if current_user.is_authenticated:
-        return 'Yes'
-    else:
-        return 'No'
+
         
 
 @app.route ('/api/update_phone',methods = ['POST'])
