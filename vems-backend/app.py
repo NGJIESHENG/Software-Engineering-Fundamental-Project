@@ -5,6 +5,7 @@ from flask_login import LoginManager, login_user, logout_user, current_user, Use
 from flask_bcrypt import Bcrypt
 from flask_session import Session
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SESSION_TYPE']='filesystem'
@@ -46,9 +47,10 @@ class Admin(db.Model):
 class Venue(db.Model):
     Venue_ID = db.Column(db.Integer, primary_key=True)
     Venue_Name = db.Column(db.String(100), nullable=False)
+    Venue_Type = db.Column(db.String(50), nullable=False) 
     Capacity = db.Column(db.Integer, nullable=False)
     Status = db.Column(db.String(50), default='Available')
-    bookings = db.relationship('Booking', backref='location',lazy=True)
+    bookings = db.relationship('Booking', backref='location', lazy=True)
 
 class Booking(db.Model):
     __tablename__ = 'booking'
@@ -61,6 +63,13 @@ class Booking(db.Model):
     End_Time = db.Column(db.String(10))
     Description = db.Column(db.String(255))
     Booking_Status = db.Column(db.String(20), default='Pending')
+    Event_Name = db.Column(db.String(100)) 
+    Estimated_Participants = db.Column(db.Integer) 
+    Booking_Reason = db.Column(db.String(50)) 
+    Organisation = db.Column(db.String(100)) 
+    Special_Requirements = db.Column(db.String(255)) 
+    Contact_Name = db.Column(db.String(100)) 
+    Contact_Gender = db.Column(db.String(10)) 
     logs = db.relationship('RequestLog',backref='related_booking', lazy=True)
     events = db.relationship('ApprovedEvent', backref='source_booking', lazy=True)
 
@@ -165,6 +174,327 @@ def update_phone():
         print(f"Database Error: {e}")
         db.session.rollback()
         return jsonify({"message": "Internal Server Error"}), 500
+
+@app.route('/api/venue-types', methods=['GET'])
+def get_venue_types():
+    try:
+        types = db.session.query(Venue.Venue_Type).distinct().all()
+        type_list = [
+            {
+                'id': t[0].lower().replace(' ', '_'),
+                'name': t[0]
+            }
+            for t in types
+        ]
+        
+        return jsonify(type_list), 200
+    except Exception as e:
+        print(f"Database Error: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
+
+@app.route('/api/venues-by-type/<type_id>', methods=['GET'])
+def get_venues_by_type(type_id):
+    try:
+        type_name = ' '.join(word.capitalize() for word in type_id.split('_'))
+        
+        venues = Venue.query.filter_by(Venue_Type=type_name).all()
+        venues_list = []
+        
+        for venue in venues:
+            venues_list.append({
+                'id': venue.Venue_ID,
+                'name': venue.Venue_Name,
+                'capacity': venue.Capacity,
+                'status': venue.Status,
+                'type': venue.Venue_Type
+            })
+        
+        return jsonify(venues_list), 200
+    except Exception as e:
+        print(f"Database Error: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
+@app.route('/api/check-availability', methods=['POST'])
+def check_availability():
+    try:
+        data = request.json
+        date = data.get('date')
+        venue_id = data.get('venue_id')
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
+        
+        venue = Venue.query.filter_by(Venue_ID=venue_id).first()
+        if not venue:
+            return jsonify({
+                'available': False,
+                'reason': 'Venue not found'
+            }), 200
+            
+        if venue.Status != 'Available':
+            return jsonify({
+                'available': False,
+                'reason': f'Venue is currently {venue.Status}'
+            }), 200
+        
+        overlapping_bookings = Booking.query.filter_by(
+            Venue_ID=venue_id,
+            Date=date
+        ).filter(
+            (Booking.Start_Time < end_time) &
+            (Booking.End_Time > start_time) &
+            (Booking.Booking_Status.in_(['Approved', 'Pending']))
+        ).all()
+        
+        is_available = len(overlapping_bookings) == 0
+        
+        response_data = {
+            'available': is_available,
+            'venue_status': venue.Status,
+            'venue_capacity': venue.Capacity
+        }
+        
+        if not is_available:
+            response_data['reason'] = 'Time slot is already booked'
+            response_data['conflicts'] = [{
+                'start_time': booking.Start_Time,
+                'end_time': booking.End_Time,
+                'status': booking.Booking_Status
+            } for booking in overlapping_bookings]
+        
+        return jsonify(response_data), 200
+        
+    except Exception as e:
+        print(f"Database Error: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
+
+@app.route('/api/create-booking', methods=['POST'])
+def create_booking():
+    try:
+        data = request.json
+        
+        required_fields = ['user_id', 'venue_id', 'date', 'start_time', 'end_time']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({"message": f"Missing required field: {field}"}), 400
+    
+        user = User.query.filter_by(User_ID=data['user_id']).first()
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+     
+        venue = Venue.query.filter_by(Venue_ID=data['venue_id']).first()
+        if not venue:
+            return jsonify({"message": "Venue not found"}), 404
+    
+        if venue.Status != 'Available':
+            return jsonify({
+                "message": f"Venue is currently {venue.Status}",
+                "status": venue.Status
+            }), 409
+      
+        overlapping_bookings = Booking.query.filter_by(
+            Venue_ID=data['venue_id'],
+            Date=data['date']
+        ).filter(
+            (Booking.Start_Time < data['end_time']) &
+            (Booking.End_Time > data['start_time']) &
+            (Booking.Booking_Status.in_(['Approved', 'Pending']))
+        ).all()
+        
+        if overlapping_bookings:
+            return jsonify({
+                "message": "Venue is not available at the selected time",
+                "conflicts": len(overlapping_bookings)
+            }), 409
+      
+        new_booking = Booking(
+            User_ID=data['user_id'],
+            Venue_ID=data['venue_id'],
+            Date=data['date'],
+            Start_Time=data['start_time'],
+            End_Time=data['end_time'],
+            Description=data.get('description', ''),
+            Submission_Date=datetime.now().strftime('%Y-%m-%d'),
+            Booking_Status='Pending',
+            Event_Name=data.get('event_name', ''),
+            Estimated_Participants=data.get('estimated_participants'),
+            Booking_Reason=data.get('booking_reason', ''),
+            Organisation=data.get('organisation', ''),
+            Special_Requirements=data.get('special_requirements', ''),
+            Contact_Name=data.get('contact_name', ''),
+            Contact_Gender=data.get('contact_gender', '')
+        )
+        
+        db.session.add(new_booking)
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Booking request submitted successfully!",
+            "booking_id": new_booking.Booking_ID,
+            "status": "Pending"
+        }), 201
+        
+    except Exception as e:
+        print(f"Database Error: {e}")
+        db.session.rollback()
+        return jsonify({"message": "Internal Server Error"}), 500
+
+
+@app.route('/api/user-bookings/<user_id>', methods=['GET'])
+def get_user_bookings(user_id):
+    try:
+        user = User.query.filter_by(User_ID=user_id).first()
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+  
+        bookings = Booking.query.filter_by(User_ID=user_id)\
+            .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
+            .add_columns(
+                Booking.Booking_ID,
+                Booking.Date,
+                Booking.Start_Time,
+                Booking.End_Time,
+                Booking.Description,
+                Booking.Booking_Status,
+                Booking.Submission_Date,
+                Booking.Event_Name,
+                Booking.Estimated_Participants,
+                Booking.Booking_Reason,
+                Booking.Organisation,
+                Booking.Special_Requirements,
+                Booking.Contact_Name,
+                Booking.Contact_Gender,
+                Venue.Venue_Name,
+                Venue.Venue_Type,
+                Venue.Capacity
+            )\
+            .order_by(Booking.Date.desc(), Booking.Start_Time.desc())\
+            .all()
+        
+        bookings_list = []
+        for booking in bookings:
+            bookings_list.append({
+                'booking_id': booking.Booking_ID,
+                'date': booking.Date,
+                'start_time': booking.Start_Time,
+                'end_time': booking.End_Time,
+                'description': booking.Description,
+                'status': booking.Booking_Status,
+                'submission_date': booking.Submission_Date,
+                'event_name': booking.Event_Name,
+                'estimated_participants': booking.Estimated_Participants,
+                'booking_reason': booking.Booking_Reason,
+                'organisation': booking.Organisation,
+                'special_requirements': booking.Special_Requirements,
+                'contact_name': booking.Contact_Name,
+                'contact_gender': booking.Contact_Gender,
+                'venue_name': booking.Venue_Name,
+                'venue_type': booking.Venue_Type,
+                'venue_capacity': booking.Capacity
+            })
+        
+        return jsonify({
+            "user": {
+                "id": user.User_ID,
+                "name": user.Name,
+                "email": user.Email,
+                "role": user.Role
+            },
+            "bookings": bookings_list,
+            "count": len(bookings_list)
+        }), 200
+        
+    except Exception as e:
+        print(f"Database Error: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
+
+@app.route('/api/admin/update-venue-status', methods=['POST'])
+def update_venue_status():
+    try:
+        data = request.json
+        venue_id = data.get('venue_id')
+        new_status = data.get('status')
+        reason = data.get('reason', '')
+        
+        if not venue_id or not new_status:
+            return jsonify({"message": "Venue ID and status are required"}), 400
+        
+        if new_status not in ['Available', 'Maintenance', 'Closed', 'Reserved']:
+            return jsonify({"message": "Invalid status"}), 400
+        
+        venue = Venue.query.filter_by(Venue_ID=venue_id).first()
+        if not venue:
+            return jsonify({"message": "Venue not found"}), 404
+        
+        old_status = venue.Status
+        venue.Status = new_status
+        
+        db.session.commit()
+        
+        return jsonify({
+            "message": f"Venue status updated to {new_status}",
+            "venue_id": venue_id,
+            "venue_name": venue.Venue_Name,
+            "old_status": old_status,
+            "new_status": new_status
+        }), 200
+        
+    except Exception as e:
+        print(f"Database Error: {e}")
+        db.session.rollback()
+        return jsonify({"message": "Internal Server Error"}), 500
+
+def populate_initial_data():
+    with app.app_context():
+        venue_count = Venue.query.count()
+        
+        if venue_count > 0:
+            print("Database already has data. Skipping initialization.")
+            return
+        
+        print("Populating initial data...")
+        
+        venue_data = [
+            # Halls
+            {'Venue_Name': 'DTC Grand Hall', 'Venue_Type': 'Hall', 'Capacity': 5000, 'Status': 'Available'},
+            {'Venue_Name': 'Multi-purpose Hall', 'Venue_Type': 'Hall', 'Capacity': 200, 'Status': 'Available'},
+            
+            # Lecture Halls
+            {'Venue_Name': 'Lecture Hall CNMX1001', 'Venue_Type': 'Lecture Hall', 'Capacity': 120, 'Status': 'Available'},
+            {'Venue_Name': 'Lecture Hall CNMX1002', 'Venue_Type': 'Lecture Hall', 'Capacity': 120, 'Status': 'Available'},
+            {'Venue_Name': 'Lecture Hall CNMX1003', 'Venue_Type': 'Lecture Hall', 'Capacity': 120, 'Status': 'Available'},
+            {'Venue_Name': 'Lecture Hall CNMX1004', 'Venue_Type': 'Lecture Hall', 'Capacity': 120, 'Status': 'Available'},
+            {'Venue_Name': 'Lecture Hall CNMX1005', 'Venue_Type': 'Lecture Hall', 'Capacity': 120, 'Status': 'Available'},
+            
+            # Sports Facility
+            {'Venue_Name': 'Swimming Pool', 'Venue_Type': 'Sports Facility', 'Capacity': 50, 'Status': 'Available'},
+            {'Venue_Name': 'Basketball Court', 'Venue_Type': 'Sports Facility', 'Capacity': 100, 'Status': 'Available'},
+            
+            # FCI Computer Labs
+            {'Venue_Name': 'CQAR 1001', 'Venue_Type': 'FCI', 'Capacity': 30, 'Status': 'Available'},
+            {'Venue_Name': 'CQAR 1002', 'Venue_Type': 'FCI', 'Capacity': 30, 'Status': 'Available'},
+            {'Venue_Name': 'CQAR 1003', 'Venue_Type': 'FCI', 'Capacity': 30, 'Status': 'Available'},
+            {'Venue_Name': 'CQAR 1004', 'Venue_Type': 'FCI', 'Capacity': 30, 'Status': 'Available'},
+            {'Venue_Name': 'CQAR 1005', 'Venue_Type': 'FCI', 'Capacity': 30, 'Status': 'Available'},
+            {'Venue_Name': 'CQCR 2001', 'Venue_Type': 'FCI', 'Capacity': 30, 'Status': 'Available'},
+            {'Venue_Name': 'CQCR 2002', 'Venue_Type': 'FCI', 'Capacity': 30, 'Status': 'Available'},
+            {'Venue_Name': 'CQCR 2003', 'Venue_Type': 'FCI', 'Capacity': 30, 'Status': 'Available'},
+            {'Venue_Name': 'CQCR 2004', 'Venue_Type': 'FCI', 'Capacity': 30, 'Status': 'Available'},
+            {'Venue_Name': 'CQCR 2005', 'Venue_Type': 'FCI', 'Capacity': 30, 'Status': 'Available'},
+        ]
+        
+        for venue_info in venue_data:
+            venue = Venue(**venue_info)
+            db.session.add(venue)
+        
+        db.session.commit()
+        print(f"Initial data populated successfully! Added {len(venue_data)} venues.")
+
+with app.app_context():
+    db.create_all()
+    populate_initial_data()
 
 if __name__=='__main__':
     app.run(debug=True, port=5000)

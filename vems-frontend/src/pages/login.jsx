@@ -16,7 +16,7 @@ function LoginPage(){
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({User_ID, Password}),
+                body: JSON.stringify({User_ID, Password}),  
             });
 
             const data = await response.json();
@@ -29,7 +29,7 @@ function LoginPage(){
                     Phone: data.user.Phone,
                     Role: data.user.Role,
                 };
-                localStorage.setItem('userData', JSON.stringify(userData));
+                localStorage.setItem('currentUser', JSON.stringify(userData));
                 alert(`Logged into ${User_ID}!`);
                 navigate('/homepage');
             } else {
@@ -75,7 +75,7 @@ function LoginPage(){
 
     const backgroundstyle = {
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #2419F0, #6F58FF)',
+        background: 'linear-gradient(135deg, #E8F5E9, #C8E6C9)',
         padding: '40px 20px',
         fontFamily: 'Arial, sans-serif'
     };

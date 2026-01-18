@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function BookingForm() {
     const location = useLocation();
@@ -18,6 +19,9 @@ function BookingForm() {
     });
     
     const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState('');
+
 
     const styles = {
         container: {
@@ -198,12 +202,37 @@ function BookingForm() {
             borderRadius: '8px',
             color: '#c53030',
             marginBottom: '20px'
+        },
+        successBox: {
+            padding: '15px',
+            background: '#c6f6d5',
+            border: '1px solid #9ae6b4',
+            borderRadius: '8px',
+            color: '#22543d',
+            marginBottom: '20px'
+        },
+        loadingSpinner: {
+            display: 'inline-block',
+            width: '16px',
+            height: '16px',
+            border: '2px solid #ffffff',
+            borderTop: '2px solid transparent',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
         }
     };
+
+    const spinAnimation = `
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    `;
 
     if (!bookingData.date || !bookingData.venue) {
         return (
             <div style={styles.container}>
+                <style>{spinAnimation}</style>
                 <div style={styles.errorBox}>
                     <h3>⚠️ Missing Booking Information</h3>
                     <p>Please go back and complete your booking selection first.</p>
@@ -266,25 +295,79 @@ function BookingForm() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setSubmitError('');
         
         if (!validateForm()) {
             return;
         }
 
-        const completeBookingData = {
-            ...bookingData,
-            ...formData,
-            submittedAt: new Date().toISOString(),
-            bookingId: `BK-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-        };
+        setIsSubmitting(true);
 
-        console.log('Submitting booking:', completeBookingData);
-        
-        alert('✅ Booking submitted successfully!\nYou will receive a confirmation email shortly.');
-        
-        navigate('/my-booking', { state: completeBookingData });
+        try {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (!currentUser) {
+                setSubmitError('Please login to submit booking');
+                navigate('/login');
+                return;
+            }
+
+            const bookingRequest = {
+                user_id: currentUser.User_ID,
+                venue_id: bookingData.venueId,
+                date: bookingData.formattedDate,
+                start_time: bookingData.startTime,
+                end_time: bookingData.endTime,
+                description: formData.bookingDetails,
+                event_name: formData.eventName,
+                estimated_participants: parseInt(formData.estimatedParticipants) || 0,
+                booking_reason: formData.bookingReason,
+                organisation: formData.organisation || '',
+                special_requirements: formData.specialRequirements || '',
+                contact_name: formData.name,
+                contact_gender: formData.gender
+            };
+
+            console.log('Submitting booking to database:', bookingRequest);
+            
+            const response = await axios.post('http://localhost:5000/api/create-booking', bookingRequest);
+            
+            if (response.status === 201) {
+                alert(`✅ Booking request submitted successfully!\n\nBooking ID: ${response.data.booking_id}\nStatus: ${response.data.status}\n`);
+                
+                navigate('/homepage', { 
+                    state: { 
+                        showSuccessMessage: true,
+                        bookingId: response.data.booking_id,
+                        message: `Booking #${response.data.booking_id} submitted successfully! It is now pending admin approval.`
+                    } 
+                });
+            }
+            
+        } catch (error) {
+            console.error('Error submitting booking:', error);
+            
+            if (error.response) {
+                if (error.response.status === 409) {
+                    setSubmitError('This time slot is no longer available. Please go back and choose another time.');
+                } else if (error.response.status === 404) {
+                    setSubmitError('User or venue not found. Please login again.');
+                    navigate('/login');
+                } else if (error.response.status === 400) {
+                    setSubmitError(error.response.data.message || 'Please check your information and try again.');
+                } else {
+                    setSubmitError(error.response.data.message || 'Failed to submit booking. Please try again.');
+                }
+            } else if (error.request) {
+                setSubmitError('Network error. Please check your connection and try again.');
+            } else {
+                setSubmitError('An unexpected error occurred. Please try again.');
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleBack = () => {
@@ -293,10 +376,18 @@ function BookingForm() {
 
     return (
         <div style={styles.container}>
+            <style>{spinAnimation}</style>
             <div style={styles.header}>
                 <h1 style={styles.title}>Complete Your Booking</h1>
                 <p style={styles.subtitle}>Review your selections and fill in the details</p>
             </div>
+
+            {submitError && (
+                <div style={styles.errorBox}>
+                    <h3>⚠️ Submission Error</h3>
+                    <p>{submitError}</p>
+                </div>
+            )}
 
             <div style={styles.section}>
                 <h2 style={styles.sectionTitle}>
@@ -360,6 +451,7 @@ function BookingForm() {
                                 value={formData.name}
                                 onChange={handleInputChange}
                                 placeholder="Enter your full name"
+                                disabled={isSubmitting}
                             />
                             {errors.name && <div style={styles.errorText}>{errors.name}</div>}
                         </div>
@@ -377,6 +469,7 @@ function BookingForm() {
                                         checked={formData.gender === 'male'}
                                         onChange={handleInputChange}
                                         style={styles.radioInput}
+                                        disabled={isSubmitting}
                                     />
                                     Male
                                 </label>
@@ -388,6 +481,7 @@ function BookingForm() {
                                         checked={formData.gender === 'female'}
                                         onChange={handleInputChange}
                                         style={styles.radioInput}
+                                        disabled={isSubmitting}
                                     />
                                     Female
                                 </label>
@@ -414,6 +508,7 @@ function BookingForm() {
                                 value={formData.eventName}
                                 onChange={handleInputChange}
                                 placeholder="e.g., Annual Conference, Workshop, Seminar"
+                                disabled={isSubmitting}
                             />
                             {errors.eventName && <div style={styles.errorText}>{errors.eventName}</div>}
                         </div>
@@ -431,6 +526,7 @@ function BookingForm() {
                                 placeholder="Number of people"
                                 min="1"
                                 max={bookingData.venueDetails?.capacity || 9999}
+                                disabled={isSubmitting}
                             />
                             {errors.estimatedParticipants && <div style={styles.errorText}>{errors.estimatedParticipants}</div>}
                             <div style={{ fontSize: '12px', color: '#718096', marginTop: '5px' }}>
@@ -451,6 +547,7 @@ function BookingForm() {
                                 value={formData.organisation}
                                 onChange={handleInputChange}
                                 placeholder="e.g., University Club, Company Name"
+                                disabled={isSubmitting}
                             />
                         </div>
                         
@@ -463,6 +560,7 @@ function BookingForm() {
                                 style={styles.select}
                                 value={formData.bookingReason}
                                 onChange={handleInputChange}
+                                disabled={isSubmitting}
                             >
                                 <option value="">Select a reason</option>
                                 <option value="academic">Academic (Class, Lecture, Exam)</option>
@@ -492,6 +590,7 @@ function BookingForm() {
                             onChange={handleInputChange}
                             placeholder="Please provide detailed information about your booking..."
                             rows="5"
+                            disabled={isSubmitting}
                         />
                         {errors.bookingDetails && <div style={styles.errorText}>{errors.bookingDetails}</div>}
                         <div style={{ fontSize: '12px', color: '#718096', marginTop: '5px' }}>
@@ -517,6 +616,7 @@ function BookingForm() {
                             onChange={handleInputChange}
                             placeholder="Any special requirements, equipment needs, or additional notes..."
                             rows="4"
+                            disabled={isSubmitting}
                         />
 
                         <div style={{ fontSize: '12px', color: '#718096', marginTop: '5px' }}>
@@ -542,14 +642,24 @@ function BookingForm() {
                         type="button"
                         style={styles.backButton}
                         onClick={handleBack}
+                        disabled={isSubmitting}
                     >
                         ← Back
                     </button>
                     <button 
                         type="submit"
-                        style={styles.submitButton}
+                        style={{
+                            ...styles.submitButton,
+                            ...(isSubmitting ? styles.disabledButton : {})
+                        }}
+                        disabled={isSubmitting}
                     >
-                        Submit Booking
+                        {isSubmitting ? (
+                            <>
+                                <div style={styles.loadingSpinner}></div>
+                                Submitting...
+                            </>
+                        ) : 'Submit Booking'}
                     </button>
                 </div>
             </form>

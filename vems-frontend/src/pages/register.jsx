@@ -46,7 +46,7 @@ function RegisterPage() {
     };
     const backgroundstyle = {
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #2419F0, #6F58FF)',
+        background: 'linear-gradient(135deg, #c1e2ff, #d6f2ff)',
         padding: '40px 20px',
         fontFamily: 'Arial, sans-serif'
     };

@@ -1,14 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function Booking() {
     const navigate = useNavigate();
     const [selectedDate, setSelectedDate] = useState('');
     const [selectedVenueType, setSelectedVenueType] = useState('');
     const [selectedVenue, setSelectedVenue] = useState('');
+    const [selectedVenueId, setSelectedVenueId] = useState('');
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState(''); 
     const [timeError, setTimeError] = useState('');
+    const [availabilityStatus, setAvailabilityStatus] = useState('');
+    const [venueTypes, setVenueTypes] = useState([]); 
+    const [venues, setVenues] = useState([]); 
+    const [isLoading, setIsLoading] = useState(false);
+    const [venueDetails, setVenueDetails] = useState(null);
 
     const styles = {
         container: {
@@ -126,6 +133,12 @@ function Booking() {
             boxShadow: '0 4px 12px rgba(56, 161, 105, 0.15)'
         },
 
+        unavailableCard: { 
+            border: '2px dashed #cbd5e0',
+            background: '#f7fafc',
+            opacity: 0.7
+        },
+
         icon: {
             fontSize: '32px',
             marginBottom: '10px'
@@ -185,58 +198,127 @@ function Booking() {
             background: '#f7fafc',
             borderRadius: '6px',
             borderLeft: '3px solid #4299e1'
+        },
+        statusBadge: {
+            fontSize: '11px',
+            padding: '3px 8px',
+            borderRadius: '12px',
+            marginTop: '5px',
+            display: 'inline-block'
         }
     };
 
-    const venueTypes = [
-        {
-            id: 'hall',
-            name: 'Hall',
-            icon: '🏛️',
-            venues: [
-                { id: 1, name: 'DTC Grand Hall', capacity: 5000 },
-                { id: 2, name: 'Multi-purpose Hall', capacity: 200}
-            ]
-        },
-        {
-            id: 'lecture',
-            name: 'Lecture Hall',
-            icon: '📚',
-            venues: [
-                { id: 3, name: 'Lecture Hall CNMX1001', capacity: 120},
-                { id: 4, name: 'Lecture Hall CNMX1002', capacity: 120},
-                { id: 5, name: 'Lecture Hall CNMX1003', capacity: 120},
-                { id: 6, name: 'Lecture Hall CNMX1004', capacity: 120},
-                { id: 7, name: 'Lecture Hall CNMX1005', capacity: 120}
-            ]
-        },
-        {
-            id: 'sport',
-            name: 'Sports Facility',
-            icon: '⚽️',
-            venues: [
-                { id: 8, name: 'Swimming Pool', capacity: 50},
-                { id: 9, name: 'Basketball Court', capacity: 100 }
-            ]
-        },
-        {
-            id: 'fci',
-            name: 'FCI',
-            icon: '💻',
-            venues: [
-                { id: 10,name:'CQAR 1001', capacity: 30},
-                { id: 11,name:'CQAR 1002', capacity: 30},
-                { id: 12,name:'CQAR 1003', capacity: 30},
-                { id: 13,name:'CQAR 1004', capacity: 30},
-                { id: 14,name:'CQAR 1005', capacity: 30},
-                { id: 15,name:'CQCR 2001', capacity: 30},
-                { id: 16,name:'CQCR 2002', capacity: 30},
-                { id: 17,name:'CQCR 2003', capacity: 30},
-                { id: 18,name:'CQCR 2004', capacity: 30},
-                { id: 19,name:'CQCR 2005', capacity: 30}
-            ]
+    useEffect(() => {
+        fetchVenueTypes();
+    }, []);
+
+    useEffect(() => {
+        if (selectedVenueType) {
+            fetchVenuesByType(selectedVenueType);
         }
-    ];
+    }, [selectedVenueType]);
+
+    useEffect(() => {
+        if (selectedDate && selectedVenueId && startTime && endTime && !timeError) {
+            checkAvailability();
+        } else {
+            setAvailabilityStatus('');
+        }
+    }, [selectedDate, selectedVenueId, startTime, endTime, timeError]);
+
+    const fetchVenueTypes = async () => {
+        try {
+            setIsLoading(true);
+            const response = await axios.get('http://localhost:5000/api/venue-types');
+            
+            const typesWithIcons = response.data.map(type => {
+                let icon = '🏛️'; 
+                switch(type.name.toLowerCase()) {
+                    case 'hall':
+                        icon = '🏛️';
+                        break;
+                    case 'lecture hall':
+                        icon = '📚';
+                        break;
+                    case 'sports facility':
+                        icon = '⚽️';
+                        break;
+                    case 'fci':
+                        icon = '💻';
+                        break;
+                }
+                
+                return {
+                    ...type,
+                    icon: icon
+                };
+            });
+            
+            setVenueTypes(typesWithIcons);
+        } catch (error) {
+            console.error('Error fetching venue types:', error);
+            alert('Failed to load venue types');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchVenuesByType = async (typeId) => {
+        try {
+            setIsLoading(true);
+            const response = await axios.get(`http://localhost:5000/api/venues-by-type/${typeId}`);
+            const sortedVenues = response.data.sort((a, b) => {
+                if (a.status === 'Available' && b.status !== 'Available') return -1;
+                if (a.status !== 'Available' && b.status === 'Available') return 1;
+                return 0;
+            });
+            
+            setVenues(sortedVenues);
+        } catch (error) {
+            console.error('Error fetching venues:', error);
+            alert('Failed to load venues');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const checkAvailability = async () => {
+        try {
+            const response = await axios.post('http://localhost:5000/api/check-availability', {
+                date: selectedDate,
+                venue_id: selectedVenueId,
+                start_time: startTime,
+                end_time: endTime
+            });
+            
+            if (response.data.available) {
+                setAvailabilityStatus('✅ This time slot is available!');
+            } else {
+                if (response.data.reason && response.data.reason.includes('Venue is currently')) {
+                    setAvailabilityStatus(`❌ ${response.data.reason}. Please select another venue.`);
+                } 
+                else if (response.data.conflicts && response.data.conflicts.length > 0) {
+                    setAvailabilityStatus('❌ This time slot is not available');
+                } else {
+                    setAvailabilityStatus(`❌ ${response.data.reason || 'Not available'}`);
+                }
+            }
+        } catch (error) {
+            console.error('Error checking availability:', error);
+            setAvailabilityStatus('⚠️ Unable to check availability');
+        }
+    };
+
+    const handleVenueSelect = (venue) => {
+        if (venue.status !== 'Available') {
+            alert(`This venue is currently ${venue.status}. Please select another venue.`);
+            return;
+        }
+
+        setSelectedVenue(venue.name);
+        setSelectedVenueId(venue.id);
+        setVenueDetails(venue);
+    };
 
     const parseTimeToMinutes = (timeStr) => {
         if (!timeStr) return 0;
@@ -334,7 +416,7 @@ function Booking() {
         setTimeError(timeError || rangeError);
     };
 
-    const handleContinue = () => {
+    const handleContinue = async () => {
         if (!selectedDate || !selectedVenueType || !selectedVenue || !startTime || !endTime) {
             alert('Please complete all selections');
             return;
@@ -354,28 +436,51 @@ function Booking() {
             return;
         }
 
-        const type = venueTypes.find(t => t.id === selectedVenueType);
-        const venue = type.venues.find(v => v.name === selectedVenue);
-        const dateObj = new Date(selectedDate);
-
-        navigate('/bookingform', {
-            state: {
-                date: dateObj,
-                venueType: selectedVenueType,
-                venueTypeName: type.name,
-                venue: selectedVenue,
-                venueDetails: venue,
-                formattedDate: selectedDate,
-                startTime: startTime, 
-                endTime: endTime,
-                duration: calculateDuration()
+        try {
+            const response = await axios.post('http://localhost:5000/api/check-availability', {
+                date: selectedDate,
+                venue_id: selectedVenueId,
+                start_time: startTime,
+                end_time: endTime
+            });
+            
+            if (!response.data.available) {
+                alert('This venue is no longer available at the selected time. Please choose another time.');
+                return;
             }
-        });
-    };
 
-    const selectedVenues = selectedVenueType 
-        ? venueTypes.find(t => t.id === selectedVenueType)?.venues || []
-        : [];
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (!currentUser) {
+                alert('Please login to continue');
+                navigate('/login');
+                return;
+            }
+
+            const type = venueTypes.find(t => t.id === selectedVenueType);
+            const dateObj = new Date(selectedDate);
+
+            navigate('/bookingform', {
+                state: {
+                    date: dateObj,
+                    venueType: selectedVenueType,
+                    venueTypeName: type ? type.name : selectedVenueType,
+                    venue: selectedVenue,
+                    venueId: selectedVenueId,
+                    venueDetails: venueDetails,
+                    formattedDate: selectedDate,
+                    startTime: startTime, 
+                    endTime: endTime,
+                    duration: calculateDuration(),
+                    user: currentUser
+                }
+            });
+
+        } catch (error) {
+            console.error('Error checking availability:', error);
+            alert('Unable to verify availability. Please try again.');
+        }
+    };
 
     const isContinueDisabled = !selectedDate || !selectedVenueType || !selectedVenue || !startTime || !endTime || timeError;
 
@@ -389,6 +494,16 @@ function Booking() {
             year: 'numeric'
         });
     };
+
+    const getStatusColor = (status) => {
+        switch(status) {
+            case 'Available': return '#38a169';
+            case 'Maintenance': return '#dd6b20';
+            case 'Closed': return '#e53e3e';
+            case 'Reserved': return '#805ad5';
+            default: return '#718096';
+        }
+    };
     
     return (
         <div style={styles.container}>
@@ -397,9 +512,9 @@ function Booking() {
                 <p style={styles.subtitle}>Choose date, venue type, and venue</p>
             </div>
 
-             <div style={styles.step}>
-               <h2 style={styles.stepTitle}>Select Date</h2>
-                 <div style={{ marginBottom: '25px' }}>
+            <div style={styles.step}>
+                <h2 style={styles.stepTitle}>Select Date</h2>
+                <div style={{ marginBottom: '25px' }}>
                     <label style={styles.label}>Booking Date *</label>
                     <input
                         type="date"
@@ -422,25 +537,29 @@ function Booking() {
 
             <div style={styles.step}>
                 <h2 style={styles.stepTitle}>Select Venue Type</h2>
-                <div style={styles.grid}>
-                    {venueTypes.map(type => (
-                        <div
-                            key={type.id}
-                            style={{
-                                ...styles.card,
-                                ...(selectedVenueType === type.id ? styles.selectedCard : {})
-                            }}
-                            onClick={() => {
-                                setSelectedVenueType(type.id);
-                                setSelectedVenue('');
-                            }}
-                        >
-                            <div style={styles.icon}>{type.icon}</div>
-                            <div style={styles.name}>{type.name}</div>
-                            <div style={styles.badge}>{type.venues.length} venues</div>
-                        </div>
-                    ))}
-                </div>
+                {isLoading ? (
+                    <p>Loading venue types...</p>
+                ) : (
+                    <div style={styles.grid}>
+                        {venueTypes.map(type => (
+                            <div
+                                key={type.id}
+                                style={{
+                                    ...styles.card,
+                                    ...(selectedVenueType === type.id ? styles.selectedCard : {})
+                                }}
+                                onClick={() => {
+                                    setSelectedVenueType(type.id);
+                                    setSelectedVenue('');
+                                    setSelectedVenueId('');
+                                }}
+                            >
+                                <div style={styles.icon}>{type.icon}</div>
+                                <div style={styles.name}>{type.name}</div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {selectedVenueType && (
@@ -452,23 +571,36 @@ function Booking() {
                         </span>
                     </h2>
                     
-                    <div style={styles.grid}>
-                        {selectedVenues.map(venue => (
-                            <div
-                                key={venue.id}
-                                style={{
-                                    ...styles.card,
-                                    ...(selectedVenue === venue.name ? styles.selectedCard : {})
-                                }}
-                                onClick={() => setSelectedVenue(venue.name)}
-                            >
-                                <div style={styles.name}>{venue.name}</div>
-                                <div style={styles.capacity}>
-                                    Capacity: {venue.capacity}
+                    {isLoading ? (
+                        <p>Loading venues...</p>
+                    ) : (
+                        <div style={styles.grid}>
+                            {venues.map(venue => (
+                                <div
+                                    key={venue.id}
+                                    style={{
+                                        ...styles.card,
+                                        ...(selectedVenue === venue.name ? styles.selectedCard : {}),
+                                        ...(venue.status !== 'Available' ? styles.unavailableCard : {}),
+                                        cursor: venue.status === 'Available' ? 'pointer' : 'not-allowed'
+                                    }}
+                                    onClick={() => handleVenueSelect(venue)}
+                                >
+                                    <div style={styles.name}>{venue.name}</div>
+                                    <div style={styles.capacity}>
+                                        Capacity: {venue.capacity}
+                                    </div>
+                                     <div style={{
+                                        ...styles.statusBadge,
+                                        background: getStatusColor(venue.status),
+                                        color: 'white'
+                                    }}>
+                                        {venue.status}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -508,6 +640,18 @@ function Booking() {
                         <p style={styles.errorText}>⚠️ {timeError}</p>
                     )}
                     
+                    {availabilityStatus && (
+                        <div style={{
+                            padding: '15px',
+                            background: availabilityStatus.includes('✅') ? '#f0fff4' : '#fed7d7',
+                            borderRadius: '8px',
+                            marginTop: '15px',
+                            border: `1px solid ${availabilityStatus.includes('✅') ? '#38a169' : '#e53e3e'}`
+                        }}>
+                            {availabilityStatus}
+                        </div>
+                    )}
+                    
                     <div style={styles.timeHint}>
                         <strong>Time format requirements:</strong>
                         <ul style={{ margin: '5px 0 0 20px', padding: '0' }}>
@@ -543,6 +687,5 @@ function Booking() {
         </div>
     );
 }
-
 
 export default Booking;

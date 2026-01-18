@@ -13,3 +13,11 @@ node_modules/
 
 # Local database
 vems-backend/vems.db
+
+# Flask session files
+instance/
+flask_session/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
