@@ -1,9 +1,7 @@
 from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-#from flask_login import LoginManager, login_user, logout_user, current_user, UserMixin
 from flask_bcrypt import Bcrypt
-#from flask_session import Session
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os
 from datetime import datetime, timedelta
@@ -12,10 +10,7 @@ app = Flask(__name__)
 app.config['SESSION_TYPE']='filesystem'
 app.config['SECRET_KEY'] = 'dandfOUINWi3oinspdfj056dfh56w323rrtDGet456'
 basedir = os.path.abspath(os.path.dirname(__file__))
-#login_manager = LoginManager()
-#login_manager.init_app(app)
 bcrypt = Bcrypt(app)
-#server_session = Session(app)
 CORS(app,resources = {r"/api/*":{"origins":"*"}})
 jwt = JWTManager(app)
 
@@ -28,7 +23,7 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1) # Token expires in 1
 app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(basedir,'vems.db')
 db = SQLAlchemy(app)
 
-class User(db.Model): #, UserMixin
+class User(db.Model):
     User_ID = db.Column(db.String(20), unique=True,  primary_key=True)
     Name = db.Column(db.String(100), nullable=False)
     Email = db.Column(db.String(100), unique=True, nullable=False)
@@ -105,10 +100,6 @@ class ApprovedEvent (db.Model):
 with app.app_context():
     db.create_all()
 
-#@login_manager.user_loader
-#def load_user(User_ID):
-#    return User.query.get(User_ID)
-
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.json
@@ -139,31 +130,17 @@ def login():
     data = request.json
     user = User.query.filter_by(User_ID=data['User_ID']).first()
     pw = data['Password']
-    admin = Admin.query.filter_by(User_ID=data['Admin_ID']).first()
     try:
-        if bcrypt.check_password_hash(user.Password, pw):
-            #login_user(user)
+        if user and bcrypt.check_password_hash(user.Password, pw):
             access_token = create_access_token(identity={"id": user.User_ID, "role": user.Role})
             return jsonify({"message": f"{user.Name} login successfully!",
                             "token": access_token,
                             "user": {"Name": user.Name, "User_ID": user.User_ID, "Email": user.Email, "Role": user.Role, "Phone": user.Phone}}), 200
-        elif bcrypt.check_password_hash(admin.Password, pw):
-            #login_user(admin)
-            access_token = create_access_token(identity={"id": admin.Admin_ID, "role": "admin"})
-            return jsonify({"message": f"{admin.Name} login successfully!",
-                            "token": access_token,
-                            "Admin": {"Name": admin.Name, "User_ID": admin.Admin_ID, "Email": admin.Email}}), 206
         else:
             return jsonify({"message": "User ID or password incorrect."}), 401
     except Exception as e:
         print(f"Databse Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
-
-@app.route('/api/logout')
-def logout():
-    #logout_user()
-    #session.pop()
-    return "User logout successfully!", 203
 
 @app.route ('/api/update_phone',methods = ['POST'])
 def update_phone():

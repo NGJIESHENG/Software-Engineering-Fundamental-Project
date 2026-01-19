@@ -47,6 +47,7 @@ function MyBooking() {
                 setApprovedBookings([]);
             } else {
                 alert('Failed to load bookings. Please try again.');
+                navigate('/')
             }
         } finally {
             setIsLoading(false);

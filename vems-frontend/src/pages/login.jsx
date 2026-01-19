@@ -30,7 +30,7 @@ function LoginPage(){
                     Role: data.user.Role,
                 };
                 localStorage.setItem('currentUser', JSON.stringify(userData));
-                localStorage.setItem('token', response.data.token);
+                //localStorage.setItem('token', response.data.token);
                 alert(`Logged into ${User_ID}!`);
                 navigate('/homepage');
             } else {
