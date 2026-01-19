@@ -1,9 +1,21 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function Homepage() {
     const navigate = useNavigate();
-    navigate('/api/user_auth')
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (!user) {
+           
+            navigate('/');
+        } else if (user.Role === 'Admin') {
+            
+            navigate('/admin-dashboard');
+        }
+    }, [navigate]);
+        
+    
+    
 
     const styles = {
         background: {

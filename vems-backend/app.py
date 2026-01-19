@@ -137,8 +137,10 @@ def register():
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
+    
     user = User.query.filter_by(User_ID=data['User_ID']).first()
     pw = data['Password']
+<<<<<<< HEAD
     admin = Admin.query.filter_by(User_ID=data['Admin_ID']).first()
     try:
         if bcrypt.check_password_hash(user.Password, pw):
@@ -158,7 +160,30 @@ def login():
     except Exception as e:
         print(f"Databse Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+=======
+    
+    try:
+>>>>>>> ede057c (Implementation admin logic)
 
+        if user and bcrypt.check_password_hash(user.Password, pw):
+            login_user(user)
+            return jsonify({
+                "message": f"{user.Name} login successfully!",
+                "user": {
+                    "Name": user.Name, 
+                    "User_ID": user.User_ID, 
+                    "Email": user.Email,
+                    "Role": user.Role,
+                    "Phone": user.Phone
+                }
+            }), 200
+        else:
+           
+            return jsonify({"message": "User ID or password incorrect."}), 401
+            
+    except Exception as e:
+        print(f"Database Error: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
 @app.route('/api/logout')
 def logout():
     #logout_user()
@@ -177,7 +202,7 @@ def update_phone():
         if not user:
             return jsonify({"message": "User not found."}), 404
         else:
-            User.Phone = data.get('Phone', '')
+            user.Phone = data.get('Phone', '')
             db.session.commit()
             return jsonify({"message": "Phone number updated successfully!"}), 200
     except Exception as e:
@@ -509,6 +534,61 @@ def populate_initial_data():
         
         db.session.commit()
         print(f"Initial data populated successfully! Added {len(venue_data)} venues.")
+
+@app.route('/api/admin/all-bookings', methods=['GET'])
+def get_all_bookings():
+    try:
+       
+        bookings = db.session.query(Booking, Venue.Venue_Name, User.Name)\
+            .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
+            .join(User, Booking.User_ID == User.User_ID)\
+            .all()
+
+        output = []
+        for b, venue_name, user_name in bookings:
+            output.append({
+                "id": b.Booking_ID,
+                "user_name": user_name,
+                "venue_name": venue_name,
+                "date": b.Date,
+                "start_time": b.Start_Time,
+                "end_time": b.End_Time,
+                "status": b.Booking_Status,
+                "event_name": b.Event_Name
+            })
+        return jsonify(output), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+    
+@app.route('/api/admin/decide-booking', methods=['POST'])
+def decide_booking():
+    data = request.json
+    booking_id = data.get('booking_id')
+    decision = data.get('decision') # 'Approved' or 'Rejected'
+    admin_id = data.get('admin_id', 'admin01') # Use current_user.User_ID if using login
+
+    booking = Booking.query.get(booking_id)
+    if not booking:
+        return jsonify({"message": "Booking not found"}), 404
+
+    booking.Booking_Status = decision
+
+    if decision == 'Approved':
+        # Create record in ApprovedEvent table as per SDS
+        new_event = ApprovedEvent(
+            User_ID=booking.User_ID,
+            Venue_ID=booking.Venue_ID,
+            Booking_ID=booking.Booking_ID,
+            Admin_ID=admin_id,
+            Event_Name=booking.Event_Name,
+            Description=booking.Description,
+            Start_Time=booking.Start_Time,
+            End_Time=booking.End_Time
+        )
+        db.session.add(new_event)
+
+    db.session.commit()
+    return jsonify({"message": f"Booking {decision} successfully!"}), 200
 
 with app.app_context():
     db.create_all()
