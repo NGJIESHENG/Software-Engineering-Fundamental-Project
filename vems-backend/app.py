@@ -140,30 +140,8 @@ def login():
     
     user = User.query.filter_by(User_ID=data['User_ID']).first()
     pw = data['Password']
-<<<<<<< HEAD
-    admin = Admin.query.filter_by(User_ID=data['Admin_ID']).first()
-    try:
-        if bcrypt.check_password_hash(user.Password, pw):
-            #login_user(user)
-            access_token = create_access_token(identity={"id": user.User_ID, "role": user.Role})
-            return jsonify({"message": f"{user.Name} login successfully!",
-                            "token": access_token,
-                            "user": {"Name": user.Name, "User_ID": user.User_ID, "Email": user.Email, "Role": user.Role, "Phone": user.Phone}}), 200
-        elif bcrypt.check_password_hash(admin.Password, pw):
-            #login_user(admin)
-            access_token = create_access_token(identity={"id": admin.Admin_ID, "role": "admin"})
-            return jsonify({"message": f"{admin.Name} login successfully!",
-                            "token": access_token,
-                            "Admin": {"Name": admin.Name, "User_ID": admin.Admin_ID, "Email": admin.Email}}), 206
-        else:
-            return jsonify({"message": "User ID or password incorrect."}), 401
-    except Exception as e:
-        print(f"Databse Error: {e}")
-        return jsonify({"message": "Internal Server Error"}), 500
-=======
     
     try:
->>>>>>> ede057c (Implementation admin logic)
 
         if user and bcrypt.check_password_hash(user.Password, pw):
             login_user(user)
