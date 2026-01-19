@@ -20,6 +20,8 @@ function LoginPage(){
             });
 
             const data = await response.json();
+            
+                console.log("Full Data Object:", data); 
 
             if (response.ok) {
                 const userData = {
