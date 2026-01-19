@@ -1,30 +1,34 @@
 from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from flask_login import LoginManager, login_user, logout_user, current_user, UserMixin
+#from flask_login import LoginManager, login_user, logout_user, current_user, UserMixin
 from flask_bcrypt import Bcrypt
-from flask_session import Session
+#from flask_session import Session
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.config['SESSION_TYPE']='filesystem'
-app.config['SECRET_KEY'] = 'your_very_secret_key_here'
+app.config['SECRET_KEY'] = 'dandfOUINWi3oinspdfj056dfh56w323rrtDGet456'
 basedir = os.path.abspath(os.path.dirname(__file__))
-login_manager = LoginManager()
-login_manager.init_app(app)
+#login_manager = LoginManager()
+#login_manager.init_app(app)
 bcrypt = Bcrypt(app)
-server_session = Session(app)
+#server_session = Session(app)
 CORS(app,resources = {r"/api/*":{"origins":"*"}})
-app.secret_key = 'supersecretkey'
+jwt = JWTManager(app)
 
 SESSION_TYPE = 'filesystem'
 SESSION_PERMANENT = False
 
+app.config['JWT_SECRET_KEY'] = 'IYfbisbegsougbef4t98473yt934hpGBfiebgAAAA' # New secret for tokens
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1) # Token expires in 1 hour
+
 app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(basedir,'vems.db')
 db = SQLAlchemy(app)
 
-class User(db.Model, UserMixin):
+class User(db.Model): #, UserMixin
     User_ID = db.Column(db.String(20), unique=True,  primary_key=True)
     Name = db.Column(db.String(100), nullable=False)
     Email = db.Column(db.String(100), unique=True, nullable=False)
@@ -101,9 +105,9 @@ class ApprovedEvent (db.Model):
 with app.app_context():
     db.create_all()
 
-@login_manager.user_loader
-def load_user(User_ID):
-    return User.query.get(User_ID)
+#@login_manager.user_loader
+#def load_user(User_ID):
+#    return User.query.get(User_ID)
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -135,12 +139,20 @@ def login():
     data = request.json
     user = User.query.filter_by(User_ID=data['User_ID']).first()
     pw = data['Password']
+    admin = Admin.query.filter_by(User_ID=data['Admin_ID']).first()
     try:
         if bcrypt.check_password_hash(user.Password, pw):
-            login_user(user)
-            if user.Role == "Admin":
-                current_user.Role = "Admin"
-            return jsonify({"message": f"{user.Name} login successfully!","user": {"Name": user.Name, "User_ID": user.User_ID, "Email": user.Email, "Role": user.Role, "Phone": user.Phone}}), 200
+            #login_user(user)
+            access_token = create_access_token(identity={"id": user.User_ID, "role": user.Role})
+            return jsonify({"message": f"{user.Name} login successfully!",
+                            "token": access_token,
+                            "user": {"Name": user.Name, "User_ID": user.User_ID, "Email": user.Email, "Role": user.Role, "Phone": user.Phone}}), 200
+        elif bcrypt.check_password_hash(admin.Password, pw):
+            #login_user(admin)
+            access_token = create_access_token(identity={"id": admin.Admin_ID, "role": "admin"})
+            return jsonify({"message": f"{admin.Name} login successfully!",
+                            "token": access_token,
+                            "Admin": {"Name": admin.Name, "User_ID": admin.Admin_ID, "Email": admin.Email}}), 206
         else:
             return jsonify({"message": "User ID or password incorrect."}), 401
     except Exception as e:
@@ -149,11 +161,9 @@ def login():
 
 @app.route('/api/logout')
 def logout():
-    logout_user()
+    #logout_user()
+    #session.pop()
     return "User logout successfully!", 203
-
-
-        
 
 @app.route ('/api/update_phone',methods = ['POST'])
 def update_phone():
@@ -270,9 +280,16 @@ def check_availability():
 
 
 @app.route('/api/create-booking', methods=['POST'])
+@jwt_required()
 def create_booking():
     try:
+        current_user = get_jwt_identity() 
+        user_id_from_token = current_user['id']
+
         data = request.json
+
+        if data.get('user_id') != user_id_from_token:
+            return jsonify({"message": "Unauthorized: You can only book for yourself"}), 403
         
         required_fields = ['user_id', 'venue_id', 'date', 'start_time', 'end_time']
         for field in required_fields:
@@ -342,6 +359,7 @@ def create_booking():
 
 
 @app.route('/api/user-bookings/<user_id>', methods=['GET'])
+@jwt_required()
 def get_user_bookings(user_id):
     try:
         user = User.query.filter_by(User_ID=user_id).first()
