@@ -1,9 +1,9 @@
 from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-#from flask_login import LoginManager, login_user, logout_user, current_user, UserMixin
+from flask_login import LoginManager, login_user, logout_user, current_user, UserMixin
 from flask_bcrypt import Bcrypt
-#from flask_session import Session
+from flask_session import Session
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os
 from datetime import datetime, timedelta
@@ -12,8 +12,8 @@ app = Flask(__name__)
 app.config['SESSION_TYPE']='filesystem'
 app.config['SECRET_KEY'] = 'dandfOUINWi3oinspdfj056dfh56w323rrtDGet456'
 basedir = os.path.abspath(os.path.dirname(__file__))
-#login_manager = LoginManager()
-#login_manager.init_app(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
 bcrypt = Bcrypt(app)
 #server_session = Session(app)
 CORS(app,resources = {r"/api/*":{"origins":"*"}})
@@ -28,7 +28,7 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1) # Token expires in 1
 app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(basedir,'vems.db')
 db = SQLAlchemy(app)
 
-class User(db.Model): #, UserMixin
+class User(db.Model, UserMixin): #, UserMixin
     User_ID = db.Column(db.String(20), unique=True,  primary_key=True)
     Name = db.Column(db.String(100), nullable=False)
     Email = db.Column(db.String(100), unique=True, nullable=False)
@@ -105,9 +105,9 @@ class ApprovedEvent (db.Model):
 with app.app_context():
     db.create_all()
 
-#@login_manager.user_loader
-#def load_user(User_ID):
-#    return User.query.get(User_ID)
+@login_manager.user_loader
+def load_user(User_ID):
+    return User.query.get(User_ID)
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -137,43 +137,25 @@ def register():
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
+    user_id = data.get('User_ID')
+    password = data.get('Password')
     
-    user = User.query.filter_by(User_ID=data['User_ID']).first()
-    pw = data['Password']
-<<<<<<< HEAD
-    admin = Admin.query.filter_by(User_ID=data['Admin_ID']).first()
-    try:
-        if bcrypt.check_password_hash(user.Password, pw):
-            #login_user(user)
-            access_token = create_access_token(identity={"id": user.User_ID, "role": user.Role})
-            return jsonify({"message": f"{user.Name} login successfully!",
-                            "token": access_token,
-                            "user": {"Name": user.Name, "User_ID": user.User_ID, "Email": user.Email, "Role": user.Role, "Phone": user.Phone}}), 200
-        elif bcrypt.check_password_hash(admin.Password, pw):
-            #login_user(admin)
-            access_token = create_access_token(identity={"id": admin.Admin_ID, "role": "admin"})
-            return jsonify({"message": f"{admin.Name} login successfully!",
-                            "token": access_token,
-                            "Admin": {"Name": admin.Name, "User_ID": admin.Admin_ID, "Email": admin.Email}}), 206
-        else:
-            return jsonify({"message": "User ID or password incorrect."}), 401
-    except Exception as e:
-        print(f"Databse Error: {e}")
-        return jsonify({"message": "Internal Server Error"}), 500
-=======
+    
+    user = User.query.filter_by(User_ID=user_id).first()
     
     try:
->>>>>>> ede057c (Implementation admin logic)
-
-        if user and bcrypt.check_password_hash(user.Password, pw):
-            login_user(user)
+        
+        if user and bcrypt.check_password_hash(user.Password, password):
+            login_user(user) # Flask-Login session
+            
+            
             return jsonify({
                 "message": f"{user.Name} login successfully!",
                 "user": {
                     "Name": user.Name, 
                     "User_ID": user.User_ID, 
                     "Email": user.Email,
-                    "Role": user.Role,
+                    "Role": user.Role, 
                     "Phone": user.Phone
                 }
             }), 200
@@ -184,6 +166,8 @@ def login():
     except Exception as e:
         print(f"Database Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+    
+   
 @app.route('/api/logout')
 def logout():
     #logout_user()
@@ -564,8 +548,8 @@ def get_all_bookings():
 def decide_booking():
     data = request.json
     booking_id = data.get('booking_id')
-    decision = data.get('decision') # 'Approved' or 'Rejected'
-    admin_id = data.get('admin_id', 'admin01') # Use current_user.User_ID if using login
+    decision = data.get('decision') 
+    admin_id = data.get('admin_id', 'admin01') 
 
     booking = Booking.query.get(booking_id)
     if not booking:
@@ -574,7 +558,7 @@ def decide_booking():
     booking.Booking_Status = decision
 
     if decision == 'Approved':
-        # Create record in ApprovedEvent table as per SDS
+        
         new_event = ApprovedEvent(
             User_ID=booking.User_ID,
             Venue_ID=booking.Venue_ID,

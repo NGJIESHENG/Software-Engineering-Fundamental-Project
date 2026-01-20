@@ -10,7 +10,7 @@ function Homepage() {
             navigate('/');
         } else if (user.Role === 'Admin') {
             
-            navigate('/admin-dashboard');
+            navigate('/admindashboard');
         }
     }, [navigate]);
         
