@@ -19,22 +19,23 @@ function LoginPage(){
                 body: JSON.stringify({User_ID, Password}),  
             });
 
-            const data = await response.json();
+        const data = await response.json();
 
-const loggedInUser = data.user || data.items;
+        const loggedInUser = data.user || data.items;
 
-if (response.ok && loggedInUser) {
-    localStorage.setItem('currentUser', JSON.stringify(loggedInUser));
-    
-    
-    const role = loggedInUser.Role.toLowerCase().trim();
+        if (response.ok && loggedInUser) {
+            localStorage.setItem('token', data.token); 
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
+            
+            
+            const role = loggedInUser.Role.toLowerCase().trim();
 
-    if (role === 'admin') {
-        navigate('/admin-dashboard');
-    } else {
-        navigate('/homepage');
-    }
-} else {
+            if (role === 'admin') {
+                navigate('/admin-dashboard');
+            } else {
+                navigate('/homepage');
+            }
+        } else {
     alert("Login failed: " + data.message);
 }
         } catch (error) {

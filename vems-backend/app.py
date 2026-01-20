@@ -297,7 +297,7 @@ def create_booking():
 
         data = request.json
 
-        if data.get('user_id') != user_id_from_token:
+        if data.get('User_Id') != user_id_from_token:
             return jsonify({"message": "Unauthorized: You can only book for yourself"}), 403
         
         required_fields = ['user_id', 'venue_id', 'date', 'start_time', 'end_time']
