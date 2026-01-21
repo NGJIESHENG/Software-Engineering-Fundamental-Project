@@ -138,13 +138,13 @@ function Homepage() {
             path: '/my-booking',
             description: 'Track and manage your bookings'
         },
-        { 
-            id: 7, 
-            name: 'Logout', 
-            icon: '🏃',
-            path: 'http://localhost:5000//api/logout',
-            description: 'Log out of your account'
-        },
+        {
+            id: 7,
+            name: 'Notifications',
+            icon: '🔔',
+            path:'/notifications',
+            description: 'View your recent notifications'
+        }
     ];
 
     const handleButtonHover = (e, isEnter) => {

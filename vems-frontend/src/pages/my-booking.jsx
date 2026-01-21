@@ -22,36 +22,55 @@ function MyBooking() {
         setUser(currentUser);
     }, [navigate]);
 
-    const fetchMyBookings = async () => {
-        if (!user) return;
+const fetchMyBookings = async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+        const rawToken = localStorage.getItem('token');
+        const token = rawToken ? rawToken.replace(/"/g, '') : null;
         
-        setIsLoading(true);
-        try {
-            const response = await axios.get(`http://localhost:5000/api/user-bookings/${user.User_ID}`);
-            
-            if (response.data && response.data.bookings) {
-                const bookings = response.data.bookings;
-                setAllBookings(bookings);
-                
-                const pending = bookings.filter(b => b.status === 'Pending');
-                const approved = bookings.filter(b => b.status === 'Approved');
-                
-                setPendingBookings(pending);
-                setApprovedBookings(approved);
-            }
-        } catch (error) {
-            console.error('Error fetching bookings:', error);
-            if (error.response?.status === 404) {
-                setAllBookings([]);
-                setPendingBookings([]);
-                setApprovedBookings([]);
-            } else {
-                alert('Failed to load bookings. Please try again.');
-            }
-        } finally {
-            setIsLoading(false);
+        if (!token) {
+            alert('Session expired. Please login again.');
+            navigate('/login');
+            return;
         }
-    };
+        const response = await axios.get(
+            `http://localhost:5000/api/user-bookings/${user.User_ID}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            }
+        );
+        
+        if (response.data && response.data.bookings) {
+            const bookings = response.data.bookings;
+            setAllBookings(bookings);
+            
+            const pending = bookings.filter(b => b.status === 'Pending');
+            const approved = bookings.filter(b => b.status === 'Approved');
+            
+            setPendingBookings(pending);
+            setApprovedBookings(approved);
+        }
+    } catch (error) {
+        console.error('Error fetching bookings:', error);
+        
+        if (error.response?.status === 401 || error.response?.status === 422) {
+            alert('Session expired. Please login again.');
+            navigate('/login');
+        } else if (error.response?.status === 404) {
+            setAllBookings([]);
+            setPendingBookings([]);
+            setApprovedBookings([]);
+        } else {
+            alert('Failed to load bookings. Please try again.');
+        }
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     useEffect(() => {
         if (user) {

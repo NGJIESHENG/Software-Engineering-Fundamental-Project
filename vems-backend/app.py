@@ -6,6 +6,7 @@ from flask_bcrypt import Bcrypt
 from flask_session import Session
 import os
 from datetime import datetime
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
 app = Flask(__name__)
 app.config['SESSION_TYPE']='filesystem'
@@ -17,6 +18,7 @@ bcrypt = Bcrypt(app)
 server_session = Session(app)
 CORS(app,resources = {r"/api/*":{"origins":"*"}})
 app.secret_key = 'supersecretkey'
+jwt = JWTManager(app)
 
 SESSION_TYPE = 'filesystem'
 SESSION_PERMANENT = False
@@ -130,17 +132,34 @@ def register():
         db.session.rollback()
         return jsonify({"message": "Internal Server Error"}), 500
     
+# REPLACE your login endpoint in app.py
+
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
-    user = User.query.filter_by(User_ID=data['User_ID']).first()
-    pw = data['Password']
+    user_id = data.get('User_ID')
+    password = data.get('Password')
+    
+    user = User.query.filter_by(User_ID=user_id).first()
+    
     try:
-        if bcrypt.check_password_hash(user.Password, pw):
+        if user and bcrypt.check_password_hash(user.Password, password):
             login_user(user)
-            if user.Role == "Admin":
-                current_user.Role = "Admin"
-            return jsonify({"message": f"{user.Name} login successfully!","user": {"Name": user.Name, "User_ID": user.User_ID, "Email": user.Email, "Role": user.Role, "Phone": user.Phone}}), 200
+            
+            # FIX: identity must be a STRING, not a dict
+            access_token = create_access_token(identity=user.User_ID)
+            
+            return jsonify({
+                "message": f"{user.Name} login successfully!",
+                "token": access_token,
+                "user": {
+                    "Name": user.Name, 
+                    "User_ID": user.User_ID, 
+                    "Email": user.Email,
+                    "Role": user.Role, 
+                    "Phone": user.Phone
+                }
+            }), 200
         else:
             return jsonify({"message": "User ID or password incorrect."}), 401
     except Exception as e:
@@ -269,10 +288,19 @@ def check_availability():
         return jsonify({"message": "Internal Server Error"}), 500
 
 
+# REPLACE your create-booking endpoint in app.py
+
 @app.route('/api/create-booking', methods=['POST'])
 def create_booking():
     try:
+        # FIX: get_jwt_identity() now returns a string (User_ID), not a dict
+        user_id_from_token = get_jwt_identity()
+        
         data = request.json
+
+        # FIX: Compare user_id directly (both are strings now)
+        if data.get('user_id') != user_id_from_token:
+            return jsonify({"message": "Unauthorized: You can only book for yourself"}), 403
         
         required_fields = ['user_id', 'venue_id', 'date', 'start_time', 'end_time']
         for field in required_fields:
@@ -285,7 +313,7 @@ def create_booking():
      
         venue = Venue.query.filter_by(Venue_ID=data['venue_id']).first()
         if not venue:
-            return jsonify({"message": "Venue not found"}), 404
+            return jsonify({"message": "Venue not found"}), 405
     
         if venue.Status != 'Available':
             return jsonify({
@@ -426,7 +454,7 @@ def update_venue_status():
         
         venue = Venue.query.filter_by(Venue_ID=venue_id).first()
         if not venue:
-            return jsonify({"message": "Venue not found"}), 404
+            return jsonify({"message": "Venue not found"}), 405
         
         old_status = venue.Status
         venue.Status = new_status
@@ -528,9 +556,10 @@ def decide_booking():
     try:
         data = request.json
         booking_id = data.get('booking_id')
-        decision = data.get('decision') # 'Approved' or 'Rejected'
+        decision = data.get('decision')  # 'Approved' or 'Rejected'
         admin_id = data.get('admin_id', 'admin01')
 
+        # FIX: Ensure all these lines are inside the try block
         booking = Booking.query.get(booking_id)
         if not booking:
             return jsonify({"message": "Booking not found"}), 404
@@ -554,8 +583,9 @@ def decide_booking():
         db.session.commit()
         return jsonify({"message": f"Booking {decision} successfully!"}), 200
     except Exception as e:
+        print(f"Decision Error: {e}") # Log the error to terminal
         db.session.rollback()
         return jsonify({"message": str(e)}), 500
-
+    
 if __name__=='__main__':
     app.run(debug=True, port=5000)
