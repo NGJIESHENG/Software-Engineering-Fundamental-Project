@@ -134,23 +134,26 @@ def register():
         db.session.rollback()
         return jsonify({"message": "Internal Server Error"}), 500
     
+# REPLACE your login endpoint in app.py
+
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
     user_id = data.get('User_ID')
     password = data.get('Password')
     
-    
     user = User.query.filter_by(User_ID=user_id).first()
     
     try:
-        
         if user and bcrypt.check_password_hash(user.Password, password):
-            login_user(user) # Flask-Login session
+            login_user(user)
             
+            # FIX: identity must be a STRING, not a dict
+            access_token = create_access_token(identity=user.User_ID)
             
             return jsonify({
                 "message": f"{user.Name} login successfully!",
+                "token": access_token,
                 "user": {
                     "Name": user.Name, 
                     "User_ID": user.User_ID, 
@@ -160,7 +163,6 @@ def login():
                 }
             }), 200
         else:
-           
             return jsonify({"message": "User ID or password incorrect."}), 401
             
     except Exception as e:
@@ -288,16 +290,19 @@ def check_availability():
         return jsonify({"message": "Internal Server Error"}), 500
 
 
+# REPLACE your create-booking endpoint in app.py
+
 @app.route('/api/create-booking', methods=['POST'])
 @jwt_required()
 def create_booking():
     try:
-        current_user = get_jwt_identity() 
-        user_id_from_token = current_user['id']
-
+        # FIX: get_jwt_identity() now returns a string (User_ID), not a dict
+        user_id_from_token = get_jwt_identity()
+        
         data = request.json
 
-        if data.get('User_Id') != user_id_from_token:
+        # FIX: Compare user_id directly (both are strings now)
+        if data.get('user_id') != user_id_from_token:
             return jsonify({"message": "Unauthorized: You can only book for yourself"}), 403
         
         required_fields = ['user_id', 'venue_id', 'date', 'start_time', 'end_time']
@@ -311,7 +316,7 @@ def create_booking():
      
         venue = Venue.query.filter_by(Venue_ID=data['venue_id']).first()
         if not venue:
-            return jsonify({"message": "Venue not found"}), 404
+            return jsonify({"message": "Venue not found"}), 405
     
         if venue.Status != 'Available':
             return jsonify({
@@ -453,7 +458,7 @@ def update_venue_status():
         
         venue = Venue.query.filter_by(Venue_ID=venue_id).first()
         if not venue:
-            return jsonify({"message": "Venue not found"}), 404
+            return jsonify({"message": "Venue not found"}), 405
         
         old_status = venue.Status
         venue.Status = new_status
@@ -553,7 +558,7 @@ def decide_booking():
 
     booking = Booking.query.get(booking_id)
     if not booking:
-        return jsonify({"message": "Booking not found"}), 404
+        return jsonify({"message": "Booking not found"}), 407
 
     booking.Booking_Status = decision
 
