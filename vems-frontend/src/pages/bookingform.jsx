@@ -300,7 +300,6 @@ function BookingForm() {
         setSubmitError('');
         
         if (!validateForm()) {
-            alert("Validation failed! Please check all required fields.");  
             return;
         }
 
@@ -308,13 +307,6 @@ function BookingForm() {
 
         try {
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            const rawToken = localStorage.getItem('token');
-            const token = rawToken ? rawToken.replace(/"/g, '') : null;
-            if (!token) {
-            alert("Session expired. Please log in again.");
-            navigate('/login');
-            return;
-        }
             
             if (!currentUser) {
                 setSubmitError('Please login to submit booking');
@@ -325,7 +317,7 @@ function BookingForm() {
             const bookingRequest = {
                 user_id: currentUser.User_ID,
                 venue_id: bookingData.venueId,
-                date: bookingData.date.split('T')[0],
+                date: bookingData.formattedDate,
                 start_time: bookingData.startTime,
                 end_time: bookingData.endTime,
                 description: formData.bookingDetails,
@@ -340,26 +332,19 @@ function BookingForm() {
 
             console.log('Submitting booking to database:', bookingRequest);
             
-            const response = await axios.post('http://localhost:5000/api/create-booking', bookingRequest, {
-            headers: {
-                'Authorization': `Bearer ${token}` 
-            }
-        });
-            if (response.status === 200 || response.status === 201) {
-    
-                const bookingId = response.data.booking_id || response.data.id;
-                const status = response.data.status || 'Pending';
-
-                alert(`✅ Booking request submitted successfully!\n\nStatus: ${status}\n`);
-    
+            const response = await axios.post('http://localhost:5000/api/create-booking', bookingRequest);
+            
+            if (response.status === 201) {
+                alert(`✅ Booking request submitted successfully!\n\nBooking ID: ${response.data.booking_id}\nStatus: ${response.data.status}\n`);
+                
                 navigate('/homepage', { 
-                state: { 
+                    state: { 
                         showSuccessMessage: true,
-                        bookingId: bookingId,
-                        message: `Booking submitted successfully! It is now pending admin approval.`
-        } 
-    });
-}
+                        bookingId: response.data.booking_id,
+                        message: `Booking #${response.data.booking_id} submitted successfully! It is now pending admin approval.`
+                    } 
+                });
+            }
             
         } catch (error) {
             console.error('Error submitting booking:', error);

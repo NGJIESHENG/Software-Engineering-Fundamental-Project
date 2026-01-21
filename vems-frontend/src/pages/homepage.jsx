@@ -1,21 +1,9 @@
-import React, {useEffect} from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function Homepage() {
     const navigate = useNavigate();
-    useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('currentUser'));
-        if (!user) {
-           
-            navigate('/');
-        } else if (user.Role === 'Admin') {
-            
-            navigate('/admindashboard');
-        }
-    }, [navigate]);
-        
-    
-    
+    navigate('/api/user_auth')
 
     const styles = {
         background: {
@@ -75,19 +63,6 @@ function Homepage() {
             alignItems: 'center',
             justifyContent: 'center',
             minHeight: '120px'
-        },
-
-        loggoutButton: {
-            position: 'absolute',
-            top: '20px',
-            right: '20px',
-            padding: '10px 15px',
-            backgroundColor: '#48bb78',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            fontWeight: 'bold'
         },
 
         buttonIcon: {
@@ -163,6 +138,13 @@ function Homepage() {
             path: '/my-booking',
             description: 'Track and manage your bookings'
         },
+        { 
+            id: 7, 
+            name: 'Logout', 
+            icon: '🏃',
+            path: 'http://localhost:5000//api/logout',
+            description: 'Log out of your account'
+        },
     ];
 
     const handleButtonHover = (e, isEnter) => {
@@ -178,13 +160,6 @@ function Homepage() {
                 <p style={styles.subHeader}>
                     Welcome! Streamline your venue bookings and event scheduling.
                 </p>
-
-                <button 
-                    style={styles.loggoutButton}
-                    onClick={() => {localStorage.removeItem('token'); navigate('/');}}
-                >
-                    Log out
-                </button>
                 
                 <div style={styles.buttonGrid}>
                     {navigationButtons.map((button) => (
