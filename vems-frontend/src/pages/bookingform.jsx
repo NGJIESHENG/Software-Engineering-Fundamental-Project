@@ -295,95 +295,115 @@ function BookingForm() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setSubmitError('');
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitError('');
+    
+    if (!validateForm()) {
+        alert("Validation failed! Please check all required fields.");  
+        return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const rawToken = localStorage.getItem('token');
+        const token = rawToken ? rawToken.replace(/"/g, '') : null;
+        console.log('🔍 Token from localStorage:', rawToken);
+        console.log('🔍 Cleaned token:', token);
+        console.log('🔍 Current user:', currentUser);
         
-        if (!validateForm()) {
-            alert("Validation failed! Please check all required fields.");  
-            return;
-        }
-
-        setIsSubmitting(true);
-
-        try {
-            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-            const rawToken = localStorage.getItem('token');
-            const token = rawToken ? rawToken.replace(/"/g, '') : null;
-            if (!token) {
+        if (!token) {
             alert("Session expired. Please log in again.");
             navigate('/login');
             return;
         }
-            
-            if (!currentUser) {
-                setSubmitError('Please login to submit booking');
-                navigate('/login');
-                return;
-            }
+        
+        if (!currentUser) {
+            setSubmitError('Please login to submit booking');
+            navigate('/login');
+            return;
+        }
 
-            const bookingRequest = {
-                user_id: currentUser.User_ID,
-                venue_id: bookingData.venueId,
-                date: bookingData.date.split('T')[0],
-                start_time: bookingData.startTime,
-                end_time: bookingData.endTime,
-                description: formData.bookingDetails,
-                event_name: formData.eventName,
-                estimated_participants: parseInt(formData.estimatedParticipants) || 0,
-                booking_reason: formData.bookingReason,
-                organisation: formData.organisation || '',
-                special_requirements: formData.specialRequirements || '',
-                contact_name: formData.name,
-                contact_gender: formData.gender
-            };
+        const bookingDate = bookingData.formattedDate || 
+                           (bookingData.date instanceof Date 
+                               ? bookingData.date.toISOString().split('T')[0] 
+                               : bookingData.date);
 
-            console.log('Submitting booking to database:', bookingRequest);
-            
-            const response = await axios.post('http://localhost:5000/api/create-booking', bookingRequest, {
+        const bookingRequest = {
+            user_id: currentUser.User_ID,
+            venue_id: bookingData.venueId,
+            date: bookingDate,
+            start_time: bookingData.startTime,
+            end_time: bookingData.endTime,
+            description: formData.bookingDetails,
+            event_name: formData.eventName,
+            estimated_participants: parseInt(formData.estimatedParticipants) || 0,
+            booking_reason: formData.bookingReason,
+            organisation: formData.organisation || '',
+            special_requirements: formData.specialRequirements || '',
+            contact_name: formData.name,
+            contact_gender: formData.gender
+        };
+
+        console.log('📤 Submitting booking to database:', bookingRequest);
+        console.log('🔑 Authorization header:', `Bearer ${token}`);
+        
+        const response = await axios.post('http://localhost:5000/api/create-booking', bookingRequest, {
             headers: {
-                'Authorization': `Bearer ${token}` 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             }
         });
-            if (response.status === 200 || response.status === 201) {
-    
-                const bookingId = response.data.booking_id || response.data.id;
-                const status = response.data.status || 'Pending';
+        
+        console.log('✅ Response:', response);
+        
+        if (response.status === 200 || response.status === 201) {
+            const bookingId = response.data.booking_id || response.data.id;
+            const status = response.data.status || 'Pending';
 
-                alert(`✅ Booking request submitted successfully!\n\nStatus: ${status}\n`);
-    
-                navigate('/homepage', { 
+            alert(`✅ Booking request submitted successfully!\n\nStatus: ${status}\n`);
+
+            navigate('/homepage', { 
                 state: { 
-                        showSuccessMessage: true,
-                        bookingId: bookingId,
-                        message: `Booking submitted successfully! It is now pending admin approval.`
-        } 
-    });
-}
-            
-        } catch (error) {
-            console.error('Error submitting booking:', error);
-            
-            if (error.response) {
-                if (error.response.status === 409) {
-                    setSubmitError('This time slot is no longer available. Please go back and choose another time.');
-                } else if (error.response.status === 404) {
-                    setSubmitError('User or venue not found. Please login again.');
-                    navigate('/login');
-                } else if (error.response.status === 400) {
-                    setSubmitError(error.response.data.message || 'Please check your information and try again.');
-                } else {
-                    setSubmitError(error.response.data.message || 'Failed to submit booking. Please try again.');
-                }
-            } else if (error.request) {
-                setSubmitError('Network error. Please check your connection and try again.');
-            } else {
-                setSubmitError('An unexpected error occurred. Please try again.');
-            }
-        } finally {
-            setIsSubmitting(false);
+                    showSuccessMessage: true,
+                    bookingId: bookingId,
+                    message: `Booking submitted successfully! It is now pending admin approval.`
+                } 
+            });
         }
-    };
+        
+    } catch (error) {
+        console.error('❌ Error submitting booking:', error);
+        console.error('❌ Error response:', error.response);
+        console.error('❌ Error response data:', error.response?.data);
+        
+        if (error.response) {
+            if (error.response.status === 409) {
+                setSubmitError('This time slot is no longer available. Please go back and choose another time.');
+            } else if (error.response.status === 404) {
+                setSubmitError('User or venue not found. Please login again.');
+                navigate('/login');
+            } else if (error.response.status === 400) {
+                setSubmitError(error.response.data.message || 'Please check your information and try again.');
+            } else if (error.response.status === 401 || error.response.status === 422) {
+                const errorMsg = error.response.data?.msg || error.response.data?.message || 'Authentication failed';
+                setSubmitError(`Session expired or invalid: ${errorMsg}. Please login again.`);
+                alert(`Authentication Error: ${errorMsg}\n\nPlease login again.`);
+                navigate('/login');
+            } else {
+                setSubmitError(error.response.data.message || 'Failed to submit booking. Please try again.');
+            }
+        } else if (error.request) {
+            setSubmitError('Network error. Please check your connection and try again.');
+        } else {
+            setSubmitError('An unexpected error occurred. Please try again.');
+        }
+    } finally {
+        setIsSubmitting(false);
+    }
+};
 
     const handleBack = () => {
         navigate('/booking', { state: bookingData });
