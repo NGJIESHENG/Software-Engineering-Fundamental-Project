@@ -496,5 +496,66 @@ with app.app_context():
     db.create_all()
     populate_initial_data()
 
+@app.route('/api/admin/all-bookings', methods=['GET'])
+def get_all_bookings():
+    try:
+        # Use outerjoin to ensure the page renders even if some data is inconsistent
+        bookings = db.session.query(Booking, Venue.Venue_Name, User.Name)\
+            .outerjoin(Venue, Booking.Venue_ID == Venue.Venue_ID)\
+            .outerjoin(User, Booking.User_ID == User.User_ID)\
+            .filter(Booking.Booking_Status == 'Pending')\
+            .all()
+
+        output = []
+        for b, venue_name, user_name in bookings:
+            output.append({
+                "id": b.Booking_ID,
+                "user_name": user_name or "Unknown User",
+                "venue_name": venue_name or "Unknown Venue",
+                "date": b.Date,
+                "start_time": b.Start_Time,
+                "end_time": b.End_Time,
+                "status": b.Booking_Status,
+                "event_name": b.Event_Name
+            })
+        return jsonify(output), 200
+    except Exception as e:
+        print(f"Admin Dashboard Error: {e}")
+        return jsonify({"message": "Error fetching bookings"}), 500
+
+@app.route('/api/admin/decide-booking', methods=['POST'])
+def decide_booking():
+    try:
+        data = request.json
+        booking_id = data.get('booking_id')
+        decision = data.get('decision') # 'Approved' or 'Rejected'
+        admin_id = data.get('admin_id', 'admin01')
+
+        booking = Booking.query.get(booking_id)
+        if not booking:
+            return jsonify({"message": "Booking not found"}), 404
+
+        booking.Booking_Status = decision
+
+        # If approved, create a record in ApprovedEvent table
+        if decision == 'Approved':
+            new_event = ApprovedEvent(
+                User_ID=booking.User_ID,
+                Venue_ID=booking.Venue_ID,
+                Booking_ID=booking.Booking_ID,
+                Admin_ID=admin_id,
+                Event_Name=booking.Event_Name,
+                Description=booking.Description,
+                Start_Time=booking.Start_Time,
+                End_Time=booking.End_Time
+            )
+            db.session.add(new_event)
+
+        db.session.commit()
+        return jsonify({"message": f"Booking {decision} successfully!"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": str(e)}), 500
+
 if __name__=='__main__':
     app.run(debug=True, port=5000)

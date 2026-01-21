@@ -300,6 +300,7 @@ function BookingForm() {
         setSubmitError('');
         
         if (!validateForm()) {
+            alert("Validation failed! Please check all required fields.");
             return;
         }
 
@@ -334,7 +335,7 @@ function BookingForm() {
             
             const response = await axios.post('http://localhost:5000/api/create-booking', bookingRequest);
             
-            if (response.status === 201) {
+            if (response.status === 201 || response.status === 200) {
                 alert(`✅ Booking request submitted successfully!\n\nBooking ID: ${response.data.booking_id}\nStatus: ${response.data.status}\n`);
                 
                 navigate('/homepage', { 

@@ -7,16 +7,13 @@ function LoginPage(){
     const [Password,setPassword] = useState('');
     const navigate = useNavigate();
 
-    const handleLogin = async (e)=> {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        alert(`Login Attempt \nUser ID: ${User_ID}\nStatus: Authenticating...`);
         try {
             const response = await fetch('http://localhost:5000/api/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({User_ID, Password}),  
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ User_ID, Password }),  
             });
 
             const data = await response.json();
@@ -29,9 +26,17 @@ function LoginPage(){
                     Phone: data.user.Phone,
                     Role: data.user.Role,
                 };
+                
+                // Store user data for global access
                 localStorage.setItem('currentUser', JSON.stringify(userData));
                 alert(`Logged into ${User_ID}!`);
-                navigate('/homepage');
+
+                // Role-based redirection
+                if (userData.Role.toLowerCase() === 'admin') {
+                    navigate('/admin-dashboard');
+                } else {
+                    navigate('/homepage');
+                }
             } else {
                 alert(`Login failed: ${data.message}`);
             }
@@ -40,7 +45,7 @@ function LoginPage(){
             alert("Could not connect to the server.");
         }
     };
-
+    
     const containerStyle = {
         maxWidth: '400px',
         margin: '100px auto',
