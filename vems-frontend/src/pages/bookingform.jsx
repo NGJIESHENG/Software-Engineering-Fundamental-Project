@@ -295,8 +295,6 @@ function BookingForm() {
         return Object.keys(newErrors).length === 0;
     };
 
- // TEMPORARY DEBUG VERSION - Replace handleSubmit to see what's happening
-
 const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError('');
@@ -312,8 +310,6 @@ const handleSubmit = async (e) => {
         const currentUser = JSON.parse(localStorage.getItem('currentUser'));
         const rawToken = localStorage.getItem('token');
         const token = rawToken ? rawToken.replace(/"/g, '') : null;
-        
-        // DEBUG: Log token info
         console.log('🔍 Token from localStorage:', rawToken);
         console.log('🔍 Cleaned token:', token);
         console.log('🔍 Current user:', currentUser);
