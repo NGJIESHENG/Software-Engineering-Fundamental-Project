@@ -47,49 +47,38 @@ function MyBooking() {
     }, [navigate]);
 
     const fetchMyBookings = async () => {
-        if (!user) return;
+    if (!user) return;
+    setIsLoading(true);
+    try {
+        const token = localStorage.getItem('token')?.replace(/"/g, '');
+        const response = await axios.get(`http://localhost:5000/api/user-bookings/${user.User_ID}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
         
-        setIsLoading(true);
-        try {
-            const rawToken = localStorage.getItem('token');
-            const token = rawToken ? rawToken.replace(/"/g, '') : null;
-            
-            if (!token) {
-                alert('Session expired. Please login again.');
-                navigate('/login');
-                return;
-            }
-
-            const response = await axios.get(
-                `http://localhost:5000/api/user-bookings/${user.User_ID}`,
-                { headers: { 'Authorization': `Bearer ${token}` } }
-            );
-            
-            if (response.data && response.data.bookings) {
-                const bookings = response.data.bookings;
-                setAllBookings(bookings);
-                setPendingBookings(bookings.filter(b => b.status === 'Pending'));
-                setApprovedBookings(bookings.filter(b => b.status === 'Approved'));
-                setRejectedBookings(bookings.filter(b => b.status === 'Rejected'));
-            }
-        } catch (error) {
-            console.error('Error fetching bookings:', error);
-            if (error.response?.status === 401 || error.response?.status === 422) {
-                alert('Session expired. Please login again.');
-                navigate('/login');
-            } else {
-                alert('Failed to load bookings. Please try again.');
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    };
+       if (response.data && response.data.bookings) {
+    const freshData = response.data.bookings;
+    
+    setAllBookings(freshData);
+    
+    setPendingBookings(freshData.filter(b => b.status?.toUpperCase() === 'PENDING'));
+    setApprovedBookings(freshData.filter(b => b.status?.toUpperCase() === 'APPROVED'));
+    setRejectedBookings(freshData.filter(b => b.status?.toUpperCase() === 'REJECTED'));
+}
+    } catch (error) {
+        console.error('Error fetching bookings:', error);
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     useEffect(() => {
         if (user) fetchMyBookings();
     }, [user]);
 
-    const currentBookings = activeTab === 'pending' ? pendingBookings : activeTab === 'approved' ? approvedBookings : rejectedBookings;
+    const currentBookings = 
+    activeTab === 'pending' ? pendingBookings : 
+    activeTab === 'approved' ? approvedBookings : 
+    activeTab === 'rejected' ? rejectedBookings : [];
 
     const getStatusStyle = (status) => {
         if (status === 'Approved') return { background: '#c6f6d5', color: '#276749' };
@@ -113,7 +102,11 @@ function MyBooking() {
                 {['Pending', 'Approved', 'Rejected'].map(t => (
                     <button 
                         key={t}
-                        style={{ ...styles.tab, ...(activeTab === t.toLowerCase() ? styles.activeTab : styles.inactiveTab) }}
+                        style={{ 
+                            ...styles.tab, 
+                            
+                            ...(activeTab === t.toLowerCase() ? styles.activeTab : styles.inactiveTab) 
+                        }}
                         onClick={() => setActiveTab(t.toLowerCase())}
                     >
                         {t}
