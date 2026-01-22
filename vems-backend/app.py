@@ -514,7 +514,7 @@ def get_all_bookings():
         bookings = db.session.query(Booking, Venue.Venue_Name, User.Name)\
             .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
             .join(User, Booking.User_ID == User.User_ID)\
-            .join(Booking, Booking.Booking_Status == 'Pending')\
+            .filter(Booking.Booking_Status == 'Pending')\
             .all()
 
         output = []
