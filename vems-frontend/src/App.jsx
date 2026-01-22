@@ -17,6 +17,8 @@ function App() {
     <Routes>
     <Route path="/" element={<LoginPage/>}/>
     <Route path="/register" element={<RegisterPage/>}/>
+    <Route path="/login" element={<LoginPage />} />
+    <Route path="/admin-dashboard" element={<AdminDashboard />} />
     <Route path="/homepage" element={<Homepage />} />
     <Route path="/dashboard" element={<Dashboard/>}/>
     <Route path="/user-profile" element={<UserProfile/>}/>
@@ -25,7 +27,6 @@ function App() {
     <Route path="/booking" element={<Booking/>}/>
     <Route path="/help" element={<Help/>}/>
     <Route path="/bookingform" element={<BookingForm/>}/>
-    <Route path="/admindashboard" element={<AdminDashboard/>}/>
     <Route path="*" element={<Navigate to="/" />}/>
     <Route path="/notifications" element={<Notifications/>}/>
     </Routes>
