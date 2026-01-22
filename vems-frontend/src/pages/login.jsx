@@ -20,8 +20,6 @@ function LoginPage(){
             });
 
             const data = await response.json();
-            
-                console.log("Full Data Object:", data); 
 
             if (response.ok) {
                 const userData = {
@@ -32,7 +30,6 @@ function LoginPage(){
                     Role: data.user.Role,
                 };
                 localStorage.setItem('currentUser', JSON.stringify(userData));
-                //localStorage.setItem('token', response.data.token);
                 alert(`Logged into ${User_ID}!`);
                 navigate('/homepage');
             } else {
