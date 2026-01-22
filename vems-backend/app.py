@@ -496,9 +496,9 @@ if __name__=='__main__':
 from flask import Flask, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-#from flask_login import LoginManager, login_user, logout_user, current_user, UserMixin
+from flask_login import LoginManager, login_user, logout_user, current_user, UserMixin
 from flask_bcrypt import Bcrypt
-#from flask_session import Session
+from flask_session import Session
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os
 from datetime import datetime, timedelta
@@ -507,8 +507,8 @@ app = Flask(__name__)
 app.config['SESSION_TYPE']='filesystem'
 app.config['SECRET_KEY'] = 'dandfOUINWi3oinspdfj056dfh56w323rrtDGet456'
 basedir = os.path.abspath(os.path.dirname(__file__))
-#login_manager = LoginManager()
-#login_manager.init_app(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
 bcrypt = Bcrypt(app)
 #server_session = Session(app)
 CORS(app,resources = {r"/api/*":{"origins":"*"}})
@@ -523,7 +523,7 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1) # Token expires in 1
 app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(basedir,'vems.db')
 db = SQLAlchemy(app)
 
-class User(db.Model): #, UserMixin
+class User(db.Model, UserMixin): #, UserMixin
     User_ID = db.Column(db.String(20), unique=True,  primary_key=True)
     Name = db.Column(db.String(100), nullable=False)
     Email = db.Column(db.String(100), unique=True, nullable=False)
@@ -600,9 +600,9 @@ class ApprovedEvent (db.Model):
 with app.app_context():
     db.create_all()
 
-#@login_manager.user_loader
-#def load_user(User_ID):
-#    return User.query.get(User_ID)
+@login_manager.user_loader
+def load_user(User_ID):
+    return User.query.get(User_ID)
 
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -629,38 +629,40 @@ def register():
         db.session.rollback()
         return jsonify({"message": "Internal Server Error"}), 500
     
+# REPLACE your login endpoint in app.py
+
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
+    user_id = data.get('User_ID')
+    password = data.get('Password')
     
-    user = User.query.filter_by(User_ID=data['User_ID']).first()
-    pw = data['Password']
+    user = User.query.filter_by(User_ID=user_id).first()
     
     try:
-
-        if user and bcrypt.check_password_hash(user.Password, pw):
+        if user and bcrypt.check_password_hash(user.Password, password):
+            login_user(user)
+            
+            # FIX: identity must be a STRING, not a dict
+            access_token = create_access_token(identity=user.User_ID)
+            
             return jsonify({
                 "message": f"{user.Name} login successfully!",
+                "token": access_token,
                 "user": {
                     "Name": user.Name, 
                     "User_ID": user.User_ID, 
                     "Email": user.Email,
-                    "Role": user.Role,
+                    "Role": user.Role, 
                     "Phone": user.Phone
                 }
             }), 200
         else:
-           
             return jsonify({"message": "User ID or password incorrect."}), 401
             
     except Exception as e:
         print(f"Database Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
-@app.route('/api/logout')
-def logout():
-    #logout_user()
-    #session.pop()
-    return "User logout successfully!", 203
 
 @app.route ('/api/update_phone',methods = ['POST'])
 def update_phone():
@@ -776,15 +778,18 @@ def check_availability():
         return jsonify({"message": "Internal Server Error"}), 500
 
 
+# REPLACE your create-booking endpoint in app.py
+
 @app.route('/api/create-booking', methods=['POST'])
 @jwt_required()
 def create_booking():
     try:
-        current_user = get_jwt_identity() 
-        user_id_from_token = current_user['id']
-
+        # FIX: get_jwt_identity() now returns a string (User_ID), not a dict
+        user_id_from_token = get_jwt_identity()
+        
         data = request.json
 
+        # FIX: Compare user_id directly (both are strings now)
         if data.get('user_id') != user_id_from_token:
             return jsonify({"message": "Unauthorized: You can only book for yourself"}), 403
         
@@ -799,7 +804,7 @@ def create_booking():
      
         venue = Venue.query.filter_by(Venue_ID=data['venue_id']).first()
         if not venue:
-            return jsonify({"message": "Venue not found"}), 404
+            return jsonify({"message": "Venue not found"}), 405
     
         if venue.Status != 'Available':
             return jsonify({
@@ -859,54 +864,45 @@ def create_booking():
 @jwt_required()
 def get_user_bookings(user_id):
     try:
+        
         user = User.query.filter_by(User_ID=user_id).first()
         if not user:
             return jsonify({"message": "User not found"}), 404
-  
-        bookings = Booking.query.filter_by(User_ID=user_id)\
-            .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
-            .add_columns(
-                Booking.Booking_ID,
-                Booking.Date,
-                Booking.Start_Time,
-                Booking.End_Time,
-                Booking.Description,
-                Booking.Booking_Status,
-                Booking.Submission_Date,
-                Booking.Event_Name,
-                Booking.Estimated_Participants,
-                Booking.Booking_Reason,
-                Booking.Organisation,
-                Booking.Special_Requirements,
-                Booking.Contact_Name,
-                Booking.Contact_Gender,
-                Venue.Venue_Name,
-                Venue.Venue_Type,
-                Venue.Capacity
-            )\
-            .order_by(Booking.Date.desc(), Booking.Start_Time.desc())\
-            .all()
+        
+        results = db.session.query(
+            Booking, 
+            Venue.Venue_Name, 
+            Venue.Venue_Type, 
+            Venue.Capacity, 
+            RequestLog.Reason_Notes
+        )\
+        .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
+        .outerjoin(RequestLog, Booking.Booking_ID == RequestLog.Booking_ID)\
+        .filter(Booking.User_ID == user_id)\
+        .order_by(Booking.Date.desc())\
+        .all()
         
         bookings_list = []
-        for booking in bookings:
+        for b, v_name, v_type, v_cap, reason in results:
             bookings_list.append({
-                'booking_id': booking.Booking_ID,
-                'date': booking.Date,
-                'start_time': booking.Start_Time,
-                'end_time': booking.End_Time,
-                'description': booking.Description,
-                'status': booking.Booking_Status,
-                'submission_date': booking.Submission_Date,
-                'event_name': booking.Event_Name,
-                'estimated_participants': booking.Estimated_Participants,
-                'booking_reason': booking.Booking_Reason,
-                'organisation': booking.Organisation,
-                'special_requirements': booking.Special_Requirements,
-                'contact_name': booking.Contact_Name,
-                'contact_gender': booking.Contact_Gender,
-                'venue_name': booking.Venue_Name,
-                'venue_type': booking.Venue_Type,
-                'venue_capacity': booking.Capacity
+                'booking_id': b.Booking_ID,
+                'date': b.Date,
+                'start_time': b.Start_Time,
+                'end_time': b.End_Time,
+                'description': b.Description,
+                'status': b.Booking_Status,
+                'submission_date': b.Submission_Date,
+                'event_name': b.Event_Name,
+                'estimated_participants': b.Estimated_Participants,
+                'booking_reason': b.Booking_Reason,
+                'organisation': b.Organisation,
+                'special_requirements': b.Special_Requirements,
+                'contact_name': b.Contact_Name,
+                'contact_gender': b.Contact_Gender,
+                'venue_name': v_name,
+                'venue_type': v_type,
+                'venue_capacity': v_cap,
+                'rejection_reason': reason if b.Booking_Status == 'Rejected' else None
             })
         
         return jsonify({
@@ -924,7 +920,6 @@ def get_user_bookings(user_id):
         print(f"Database Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
-
 @app.route('/api/admin/update-venue-status', methods=['POST'])
 def update_venue_status():
     try:
@@ -941,7 +936,7 @@ def update_venue_status():
         
         venue = Venue.query.filter_by(Venue_ID=venue_id).first()
         if not venue:
-            return jsonify({"message": "Venue not found"}), 404
+            return jsonify({"message": "Venue not found"}), 405
         
         old_status = venue.Status
         venue.Status = new_status
@@ -1014,6 +1009,7 @@ def get_all_bookings():
         bookings = db.session.query(Booking, Venue.Venue_Name, User.Name)\
             .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
             .join(User, Booking.User_ID == User.User_ID)\
+            .join(Booking, Booking.Booking_Status == 'Pending')\
             .all()
 
         output = []
@@ -1033,35 +1029,55 @@ def get_all_bookings():
         return jsonify({"message": str(e)}), 500
     
 @app.route('/api/admin/decide-booking', methods=['POST'])
+
 def decide_booking():
-    data = request.json
-    booking_id = data.get('booking_id')
-    decision = data.get('decision') # 'Approved' or 'Rejected'
-    admin_id = data.get('admin_id', 'admin01') # Use current_user.User_ID if using login
+    try:
+        data = request.json
+        booking_id = data.get('booking_id')
+        decision = data.get('decision') 
+        admin_id = data.get('admin_id', 'admin01')
+        reason = data.get('reason', '') 
 
-    booking = Booking.query.get(booking_id)
-    if not booking:
-        return jsonify({"message": "Booking not found"}), 404
+        booking = Booking.query.get(booking_id) 
+        if not booking:
+            return jsonify({"message": "Booking not found"}), 407
 
-    booking.Booking_Status = decision
+        old_status = booking.Booking_Status
+        booking.Booking_Status = decision
 
-    if decision == 'Approved':
-        # Create record in ApprovedEvent table as per SDS
-        new_event = ApprovedEvent(
-            User_ID=booking.User_ID,
-            Venue_ID=booking.Venue_ID,
-            Booking_ID=booking.Booking_ID,
-            Admin_ID=admin_id,
-            Event_Name=booking.Event_Name,
-            Description=booking.Description,
-            Start_Time=booking.Start_Time,
-            End_Time=booking.End_Time
-        )
-        db.session.add(new_event)
+        log_entry = RequestLog(
+                Booking_ID=booking_id,
+                Admin_ID=admin_id,
+                Action_Type=decision,
+                Action_Time=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                Reason_Notes=reason,
+                Old_Status=old_status,
+                New_Status=decision
+            )
+        db.session.add(log_entry)
 
-    db.session.commit()
-    return jsonify({"message": f"Booking {decision} successfully!"}), 200
+        if decision == 'Approved':
+            
+            new_event = ApprovedEvent(
+                User_ID=booking.User_ID,
+                Venue_ID=booking.Venue_ID,
+                Booking_ID=booking.Booking_ID,
+                Admin_ID=admin_id,
+                Event_Name=booking.Event_Name,
+                Description=booking.Description,
+                Start_Time=booking.Start_Time,
+                End_Time=booking.End_Time
+            )
+            db.session.add(new_event)
 
+        db.session.commit()
+        return jsonify({"message": f"Booking {decision} successfully!"}), 200
+
+    except Exception as e:
+        print(f"Error: {e}") 
+        db.session.rollback()
+        return jsonify({"message": str(e)}), 500
+    
 with app.app_context():
     db.create_all()
     populate_initial_data()
