@@ -7,45 +7,43 @@ function LoginPage(){
     const [Password,setPassword] = useState('');
     const navigate = useNavigate();
 
-    const handleLogin = async (e) => {
+    const handleLogin = async (e)=> {
         e.preventDefault();
+        alert(`Login Attempt \nUser ID: ${User_ID}\nStatus: Authenticating...`);
         try {
             const response = await fetch('http://localhost:5000/api/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ User_ID, Password }),  
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({User_ID, Password}),  
             });
 
-            const data = await response.json();
+        const data = await response.json();
 
-            if (response.ok) {
-                const userData = {
-                    Name: data.user.Name,
-                    User_ID: data.user.User_ID,
-                    Email: data.user.Email,
-                    Phone: data.user.Phone,
-                    Role: data.user.Role,
-                };
-                
-                // Store user data for global access
-                localStorage.setItem('currentUser', JSON.stringify(userData));
-                alert(`Logged into ${User_ID}!`);
+        const loggedInUser = data.user || data.items;
 
-                // Role-based redirection
-                if (userData.Role.toLowerCase() === 'admin') {
-                    navigate('/admin-dashboard');
-                } else {
-                    navigate('/homepage');
-                }
+        if (response.ok && loggedInUser) {
+            localStorage.setItem('token', data.token); 
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
+            
+            
+            const role = loggedInUser.Role.toLowerCase().trim();
+
+            if (role === 'admin') {
+                navigate('/admin-dashboard');
             } else {
-                alert(`Login failed: ${data.message}`);
+                navigate('/homepage');
             }
+        } else {
+    alert("Login failed: " + data.message);
+}
         } catch (error) {
             console.error("Connection error:", error);
             alert("Could not connect to the server.");
         }
     };
-    
+
     const containerStyle = {
         maxWidth: '400px',
         margin: '100px auto',

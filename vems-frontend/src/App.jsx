@@ -10,12 +10,15 @@ import Booking from './pages/booking';
 import BookingForm from './pages/bookingform';
 import Help from './pages/help';
 import AdminDashboard from './pages/admindashboard';
+import Notifications from './pages/notifications';
 
 function App() {
   return (
     <Routes>
     <Route path="/" element={<LoginPage/>}/>
     <Route path="/register" element={<RegisterPage/>}/>
+    <Route path="/login" element={<LoginPage />} />
+    <Route path="/admin-dashboard" element={<AdminDashboard />} />
     <Route path="/homepage" element={<Homepage />} />
     <Route path="/dashboard" element={<Dashboard/>}/>
     <Route path="/user-profile" element={<UserProfile/>}/>
@@ -24,8 +27,8 @@ function App() {
     <Route path="/booking" element={<Booking/>}/>
     <Route path="/help" element={<Help/>}/>
     <Route path="/bookingform" element={<BookingForm/>}/>
-    <Route path="/admindashboard" element={<AdminDashboard/>}/>
     <Route path="*" element={<Navigate to="/" />}/>
+    <Route path="/notifications" element={<Notifications/>}/>
     </Routes>
   );
 }
