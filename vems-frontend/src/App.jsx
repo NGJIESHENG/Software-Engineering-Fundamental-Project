@@ -11,6 +11,7 @@ import BookingForm from './pages/bookingform';
 import Help from './pages/help';
 import AdminDashboard from './pages/admindashboard';
 import Notifications from './pages/notifications';
+import ModifyDetails from './pages/modifydetails';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
     <Route path="/bookingform" element={<BookingForm/>}/>
     <Route path="*" element={<Navigate to="/" />}/>
     <Route path="/notifications" element={<Notifications/>}/>
+    <Route path="/modifydetails" element={<ModifyDetails/>}/>
     </Routes>
   );
 }

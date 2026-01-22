@@ -282,19 +282,16 @@ def check_availability():
         print(f"Database Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
-
-# REPLACE your create-booking endpoint in app.py
-
 @app.route('/api/create-booking', methods=['POST'])
 @jwt_required()
 def create_booking():
     try:
-        # FIX: get_jwt_identity() now returns a string (User_ID), not a dict
+        # get_jwt_identity() now returns a string (User_ID), not a dict
         user_id_from_token = get_jwt_identity()
         
         data = request.json
 
-        # FIX: Compare user_id directly (both are strings now)
+        # Compare user_id directly (both are strings now)
         if data.get('user_id') != user_id_from_token:
             return jsonify({"message": "Unauthorized: You can only book for yourself"}), 403
         
@@ -583,6 +580,96 @@ def decide_booking():
         db.session.rollback()
         return jsonify({"message": str(e)}), 500
     
+@app.route('/api/booking-details', methods=['GET'])
+@jwt_required()
+def get_booking_details():
+    try:
+        booking_id = request.args.get('booking_id')
+        
+        if not booking_id:
+            return jsonify({'message': 'Booking ID is required'}), 400
+
+        result = db.session.query(Booking, Venue)\
+            .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
+            .filter(Booking.Booking_ID == booking_id)\
+            .first()
+
+        if not result:
+            return jsonify({'message': 'Booking not found'}), 404
+
+        booking, venue = result  # Unpack the tuple returned by the query
+
+        # 3. Construct the response object
+        # Keys here match exactly what your React 'setFormData' and 'setSummaryData' expect
+        response_data = {
+            # Meta / Summary Data
+            "booking_id": booking.Booking_ID,
+            "status": booking.Booking_Status,
+            "date": booking.Date if booking.Date else None,
+            "start_time": str(booking.Start_Time),
+            "end_time": str(booking.End_Time),
+            "venue_name": venue.Venue_Name,
+            "venue_type": getattr(venue, 'Venue_Type', 'N/A'), # Use getattr in case column is missing
+            "venue_capacity": venue.Capacity,
+
+            # Form Data Fields
+            "contact_name": booking.Contact_Name,
+            "contact_gender": booking.Contact_Gender,
+            "booking_reason": booking.Booking_Reason,
+            "description": booking.Description,
+            "organisation": booking.Organisation,
+            "event_name": booking.Event_Name,
+            "estimated_participants": booking.Estimated_Participants,
+            "special_requirements": booking.Special_Requirements
+        }
+
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        print(f"Error fetching booking details: {str(e)}")
+        return jsonify({'message': 'Internal Server Error', 'error': str(e)}), 500
+
+@app.route('/api/update-booking', methods=['PUT'])
+@jwt_required()
+def update_booking():
+    try:
+        # 1. Get JSON data from the request body
+        data = request.get_json()
+        booking_id = data.get('booking_id')
+
+        if not booking_id:
+            return jsonify({'message': 'Booking ID is required'}), 400
+
+        # 2. Find the existing booking in the database
+        booking = db.session.query(Booking).filter(Booking.Booking_ID == booking_id).first()
+
+        if not booking:
+            return jsonify({'message': 'Booking not found'}), 404
+
+        # 3. Update the fields
+        # We use .get() to only update if the new value is provided, otherwise keep existing
+        booking.Description = data.get('description', booking.Description)
+        booking.Event_Name = data.get('event_name', booking.Event_Name)
+        booking.Estimated_Participants = data.get('estimated_participants', booking.Estimated_Participants)
+        booking.Booking_Reason = data.get('booking_reason', booking.Booking_Reason)
+        booking.Organisation = data.get('organisation', booking.Organisation)
+        booking.Special_Requirements = data.get('special_requirements', booking.Special_Requirements)
+        booking.Contact_Name = data.get('contact_name', booking.Contact_Name)
+        booking.Contact_Gender = data.get('contact_gender', booking.Contact_Gender)
+
+        # 4. Commit changes to the database
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Booking updated successfully',
+            'booking_id': booking.Booking_ID
+        }), 200
+
+    except Exception as e:
+        db.session.rollback() # Rollback in case of error to keep DB clean
+        print(f"Error updating booking: {str(e)}")
+        return jsonify({'message': 'Internal Server Error', 'error': str(e)}), 500
+
 with app.app_context():
     db.create_all()
     populate_initial_data()
