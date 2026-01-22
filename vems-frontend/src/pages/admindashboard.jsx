@@ -93,6 +93,11 @@ function AdminDashboard() {
                 </tbody>
             </table>
             {bookings.length === 0 && <p style={{ textAlign: 'center', marginTop: '20px', color: '#718096' }}>No pending bookings found.</p>}
+
+            <h2 style={{ marginTop: '40px', borderBottom: '2px solid #2b6cb0', paddingBottom: '10px' }}>History</h2>
+            <table style={{ width: '100%', marginTop: '20px', borderCollapse: 'collapse' }}>
+
+            </table>
         </div>
     );
 }

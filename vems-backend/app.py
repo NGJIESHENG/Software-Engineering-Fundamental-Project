@@ -168,13 +168,6 @@ def login():
     except Exception as e:
         print(f"Database Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
-    
-   
-@app.route('/api/logout')
-def logout():
-    #logout_user()
-    #session.pop()
-    return "User logout successfully!", 203
 
 @app.route ('/api/update_phone',methods = ['POST'])
 def update_phone():
@@ -521,6 +514,7 @@ def get_all_bookings():
         bookings = db.session.query(Booking, Venue.Venue_Name, User.Name)\
             .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
             .join(User, Booking.User_ID == User.User_ID)\
+            .join(Booking, Booking.Booking_Status == 'Pending')\
             .all()
 
         output = []
