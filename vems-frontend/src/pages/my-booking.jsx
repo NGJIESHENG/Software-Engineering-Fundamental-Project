@@ -153,6 +153,12 @@ function MyBooking() {
                         <p><strong>Venue:</strong> {selectedBooking.venue_name}</p>
                         <p><strong>Date:</strong> {selectedBooking.date}</p>
                         
+                        {selectedBooking.status === 'Approved' && (
+                            <button style={styles.createButton} onClick={() => navigate('/modifydetails', {state: { bookingId: selectedBooking.booking_id } })}>
+                                Modify
+                            </button>
+                        )}
+
                         {selectedBooking.status === 'Rejected' && (
                             <div style={{ marginTop: '20px', padding: '15px', background: '#fff5f5', borderRadius: '8px', borderLeft: '4px solid #c53030' }}>
                                 <strong style={{ color: '#c53030' }}>Rejection Reason:</strong>
