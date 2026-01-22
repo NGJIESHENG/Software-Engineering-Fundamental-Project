@@ -10,7 +10,7 @@ function Homepage() {
             navigate('/');
         } else if (user.Role === 'Admin') {
             
-            navigate('/admin-dashboard');
+            navigate('/admindashboard');
         }
     }, [navigate]);
         
@@ -163,6 +163,13 @@ function Homepage() {
             path: '/my-booking',
             description: 'Track and manage your bookings'
         },
+        {
+            id: 7,
+            name: 'Notifications',
+            icon: '🔔',
+            path:'/notifications',
+            description: 'View your recent notifications'
+        }
     ];
 
     const handleButtonHover = (e, isEnter) => {

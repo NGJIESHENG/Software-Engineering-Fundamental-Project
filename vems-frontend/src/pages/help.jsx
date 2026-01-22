@@ -42,6 +42,7 @@ const Style = {
     border: '1px solid #7c7c7c',
     marginBottom: '20px',
   },
+  Color:{ color: '#110df1' }
 };
 return (
   <div style={backgroundstyle}>
@@ -60,7 +61,9 @@ return (
             <div style={Style.answer}>
               Please log out and log back in to refresh your account details.
             </div>
-            <div style = {Style.question}></div>
+            <div style = {Style.question}>How to contact us?</div>
+            <div style={Style.answer}>campus IT support email: <span style={Style.Color}>it-support@campus.edu</span> or call<span style={Style.Color}>+60 3-1234 5678</span> </div>
+            <a href="/homepage" style={{ ...Style.Color}}>Back</a>
       </div>
   </div>
 </div>

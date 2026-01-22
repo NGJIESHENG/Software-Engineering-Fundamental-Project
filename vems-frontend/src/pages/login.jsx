@@ -19,25 +19,25 @@ function LoginPage(){
                 body: JSON.stringify({User_ID, Password}),  
             });
 
-            const data = await response.json();
-            
-                console.log("Full Data Object:", data); 
+        const data = await response.json();
 
-            if (response.ok) {
-                const userData = {
-                    Name: data.user.Name,
-                    User_ID: data.user.User_ID,
-                    Email: data.user.Email,
-                    Phone: data.user.Phone,
-                    Role: data.user.Role,
-                };
-                localStorage.setItem('currentUser', JSON.stringify(userData));
-                localStorage.setItem('token', response.data.token);
-                alert(`Logged into ${User_ID}!`);
-                navigate('/homepage');
+        const loggedInUser = data.user || data.items;
+
+        if (response.ok && loggedInUser) {
+            localStorage.setItem('token', data.token); 
+            localStorage.setItem('currentUser', JSON.stringify(data.user));
+            
+            
+            const role = loggedInUser.Role.toLowerCase().trim();
+
+            if (role === 'admin') {
+                navigate('/admin-dashboard');
             } else {
-                alert(`Login failed: ${data.message}`);
+                navigate('/homepage');
             }
+        } else {
+    alert("Login failed: " + data.message);
+}
         } catch (error) {
             console.error("Connection error:", error);
             alert("Could not connect to the server.");
