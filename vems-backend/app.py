@@ -286,12 +286,10 @@ def check_availability():
 @jwt_required()
 def create_booking():
     try:
-        # get_jwt_identity() now returns a string (User_ID), not a dict
         user_id_from_token = get_jwt_identity()
         
         data = request.json
 
-        # Compare user_id directly (both are strings now)
         if data.get('user_id') != user_id_from_token:
             return jsonify({"message": "Unauthorized: You can only book for yourself"}), 403
         
