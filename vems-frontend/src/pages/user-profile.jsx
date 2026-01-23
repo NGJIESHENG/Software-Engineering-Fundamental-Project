@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 function UserProfile() {
 const navigate = useNavigate();
 const [userData, setUserData]= useState({
+  id: null,
   Name: '',
   User_ID: '',
   Email: '',
@@ -24,17 +25,20 @@ useEffect(() => {
     navigate('/login');
   }
 }, [navigate]);
-
-
 const handle_Edit = () => {
   set_temp_Phone(userData.Phone || '');
   set_editing_Phone(true);
+  setMessage('');
 };
-
+const handleCancel = () => {
+  set_editing_Phone(false);
+  set_temp_Phone('');
+  setMessage('');
+};
 const handle_save = async (e) => {
   e.preventDefault();
-  setLoading(true);
-  setMessage('');
+    setLoading(true);
+    setMessage('');
   try {
     const response = await fetch('http://localhost:5000/api/update_phone', {
       method: 'POST',
@@ -171,7 +175,7 @@ const handle_save = async (e) => {
             {editing_Phone ? (
               <>
                 <input
-                  type="tel"
+                  type="text"
                   value={temp_Phone}
                   onChange={(e) => set_temp_Phone(e.target.value)}
                   style={inputStyle}placeholder="Enter phone number"/>
