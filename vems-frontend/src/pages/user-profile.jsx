@@ -12,89 +12,108 @@ const [userData, setUserData]= useState({
   Role: '',
 });
 
-const [editing_Phone, set_editing_Phone] = useState(false);
-const[temp_Phone, set_temp_Phone] = useState('');
-const [loading, setLoading] = useState(false);
-const [message, setMessage] = useState('');
+  const [editing_Phone, set_editing_Phone] = useState(false);
+  const [temp_Phone, set_temp_Phone] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
 
-useEffect(() => {
-  const fetchUserData = async () => {
-    const token = localStorage.getItem('token');
-    const storedUserData = JSON.parse(localStorage.getItem('userData'));
-    if (!token || !storedUserData) {
-      navigate('/login');
-      return;
-    }
-    try {
-      const response = await fetch(`http://localhost:5000/api/user/${storedUserData.User_ID}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUserData(data);
-      } else {
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const token = localStorage.getItem('token');
+      const user_id = localStorage.getItem('user_id');
+      
+      console.log('Token:', token ? 'exists' : 'missing');
+      console.log('User ID:', user_id);
+      
+      if (!token || !user_id) {
+        console.error('No token or user_id found');
+        alert('Please login first');
         navigate('/login');
+        return;
+      }
+      try {
+        console.log('Fetching data for user:', user_id);
+        const response = await fetch(`http://localhost:5000/api/user/${user_id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        console.log('Response status:', response.status);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('User data from database:', data);
+          setUserData(data);
+          setLoading(false);
+        } else {
+          const errorData = await response.json();
+          console.error('API Error:', errorData);
+          if (response.status === 401 || response.status === 403) {
+            alert('Session expired. Please login again.');
+            localStorage.clear();
+            navigate('/login');
+          } else {
+            alert(`Error: ${errorData.message}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        alert('Unable to connect to server');
+      }
+    };
+    fetchUserData();
+  }, [navigate]);
+  const handle_Edit = () => {
+    set_temp_Phone(userData.Phone || '');
+    set_editing_Phone(true);
+    setMessage('');
+  };
+  const handleCancel = () => {
+    set_editing_Phone(false);
+    set_temp_Phone('');
+    setMessage('');
+  };
+  const handle_save = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setLoading(true);
+    setMessage('');
+    try {
+      const response = await fetch('http://localhost:5000/api/update_phone', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          User_ID: userData.User_ID,
+          Phone: temp_Phone === '' ? null : temp_Phone,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        const userResponse = await fetch(`http://localhost:5000/api/user/${userData.User_ID}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        if (userResponse.ok) {
+          const freshUserData = await userResponse.json();
+          setUserData(freshUserData); 
+        }
+        set_editing_Phone(false);
+        setMessage('Phone updated successfully!');
+      } else {
+        setMessage(data.message || 'Failed to update phone');
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
-      navigate('/login');
+      console.error('Error updating phone:', error);
+      setMessage('Error connecting to server');
     }
+    setSaving(false);
   };
-  fetchUserData();
-}, [navigate]);
-const handle_Edit = () => {
-  set_temp_Phone(userData.Phone ?? '');
-  set_editing_Phone(true);
-  setMessage('');
-};
-const handleCancel = () => {
-  set_editing_Phone(false);
-  set_temp_Phone('');
-  setMessage('');
-};
-const handle_save = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setMessage('');
-  try {
-    const response = await fetch('http://localhost:5000/api/update_phone', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify({
-        User_ID: userData.User_ID,
-        Phone: temp_Phone === '' ? null : temp_Phone,
-      }),
-    });
-    const data = await response.json();
-    if (response.ok) {
-      const userResponse = await fetch(`http://localhost:5000/api/user/${userData.User_ID}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (userResponse.ok) {
-        const freshUserData = await userResponse.json();
-        setUserData(freshUserData);
-      }
-      
-      set_editing_Phone(false);
-      setMessage('Phone updated successfully!');
-    } else {
-      setMessage(data.message || 'Failed to update Phone');
-    }
-  } catch (error) {
-    console.error('Error updating Phone:', error);
-    setMessage('Error connecting to server');
-  }
-  setLoading(false);
-};
-
   const backgroundstyle = {
     width: '100%',
     minHeight: '97.8vh',
@@ -176,7 +195,7 @@ const handle_save = async (e) => {
     marginBottom: '20px',
     borderRadius: '6px',
     backgroundColor: message.includes('success') ? '#d4edda' : '#f8d7da',
-    color: message.includes('success') ? '#155724' : '#721c24',
+    color: message.includes('success') ? '#2e633a' : '#721c24',
     border: `1px solid ${message.includes('success') ? '#c3e6cb' : '#f5c6cb'}`
   };
 
@@ -185,31 +204,27 @@ const handle_save = async (e) => {
       <div style={cardStyle}>
         <div style={headerstyle}>User Profile</div>
         <div style={contentStyle}>
-          {message && <div style={messageStyle}>{message}</div>}
+          {message && <div style={messageStyle}>{message}</div>}         
           <div style={fieldStyle}>
             <label style={labelStyle}>Username</label>
             <div style={valueStyle}>{userData.Name}</div>
-          </div>
+          </div>       
           <div style={fieldStyle}>
             <label style={labelStyle}>User ID</label>
             <div style={valueStyle}>{userData.User_ID}</div>
-          </div>
+          </div>      
           <div style={fieldStyle}>
             <label style={labelStyle}>Email</label>
             <div style={valueStyle}>{userData.Email}</div>
-          </div>
+          </div>     
           <div style={fieldStyle}>
             <label style={labelStyle}>Phone</label>
             {editing_Phone ? (
               <>
-                <input
-                  type="text"
-                  value={temp_Phone}
-                  onChange={(e) => set_temp_Phone(e.target.value)}
-                  style={inputStyle}
-                  placeholder="Enter phone number"/>
+                <input type="text"value={temp_Phone}onChange={(e) => set_temp_Phone(e.target.value)}style={inputStyle}placeholder="Enter phone number" />
                 <div style={{display: 'flex', gap: '10px'}}>
-                  <button onClick={handle_save} style={buttonStyle} disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
+                  <button onClick={handle_save} style={buttonStyle} disabled={saving}>{saving ? 'Saving...' : 'Save'}
+                  </button>
                   <button onClick={handleCancel} style={{...buttonStyle, backgroundColor: '#6c757d'}}>Cancel</button>
                 </div>
               </>
