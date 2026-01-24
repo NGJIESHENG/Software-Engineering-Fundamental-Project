@@ -221,7 +221,7 @@ def get_venue_types():
             }
             for t in types
         ]
-        
+        print(type_list)
         return jsonify(type_list), 200
     except Exception as e:
         print(f"Database Error: {e}")
@@ -231,7 +231,10 @@ def get_venue_types():
 @app.route('/api/venues-by-type/<type_id>', methods=['GET'])
 def get_venues_by_type(type_id):
     try:
-        type_name = ' '.join(word.capitalize() for word in type_id.split('_'))
+        if type_id.lower() == 'fci':
+            type_name = 'FCI'
+        else:
+            type_name = ' '.join(word.capitalize() for word in type_id.split('_'))
         
         venues = Venue.query.filter_by(Venue_Type=type_name).all()
         venues_list = []
