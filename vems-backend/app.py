@@ -191,6 +191,7 @@ def get_user(user_id):
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+    
 @app.route ('/api/update_phone',methods = ['POST'])
 def update_phone():
     data = request.json
@@ -209,6 +210,24 @@ def update_phone():
     except Exception as e:
         print(f"Database Error: {e}")
         db.session.rollback()
+        return jsonify({"message": "Internal Server Error"}), 500
+
+@app.route('/api/venues', methods=['GET'])
+def get_all_venues_list():
+    try:
+        venues = Venue.query.all()
+        result = []
+        for v in venues:
+            result.append({
+                'id': v.Venue_ID,
+                'name': v.Venue_Name,
+                'capacity': v.Capacity,
+                'status': v.Status,
+                'type': v.Venue_Type
+            })
+        return jsonify(result), 200
+    except Exception as e:
+        print(f"Error fetching venues: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
 @app.route('/api/venue-types', methods=['GET'])
