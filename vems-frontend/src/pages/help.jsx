@@ -4,14 +4,14 @@ function Help() {
   const backgroundStyle = {
     width: '100%',
     minHeight: '97.5vh',
-    background: 'linear-gradient(135deg, #4b42f5, #6F58FF)',
+    background: 'linear-gradient(135deg,#c1e2ff, #d6f2ff)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     paddingTop: '20px',
   };
   const headerStyle = {
-    color: '#ffffff',
+    color: '#18a8f5',
     marginBottom: '20px',
     fontSize: '32px',
     fontWeight: '700',
@@ -29,7 +29,7 @@ function Help() {
       marginBottom: '22px',
     },
     question: {
-      backgroundColor: '#829df7',
+      backgroundColor: '#cad5f9',
       color: '#1e3a8a',
       padding: '15px',
       borderRadius: '8px',
@@ -89,6 +89,30 @@ function Help() {
             <br />
             Call: <span style={styles.highlight}>+60 3-1234 5678</span>
           </div>
+          <div style={styles.faqItem}>
+          <div style={styles.question}>
+            Where can see booking details?
+          </div>
+          <div style={styles.answer}>
+            Click on the My Booking and select the booking you want to view details.
+          </div>
+        </div>
+        <div style={styles.faqItem}>
+          <div style={styles.question}>
+            Why did I receive a notification?
+          </div>
+          <div style={styles.answer}>
+            You receive a notification when admin has approved or rejected your booking request.
+          </div>
+        </div>
+        <div style={styles.faqItem}>
+          <div style={styles.question}>
+            Why don't see any notifications?
+          </div>
+          <div style={styles.answer}>
+            Your booking has not been reviewed yet. Please wait until admin processes your booking request.
+          </div>
+        </div>
         </div>
         <a href="/homepage" style={styles.link}>← Back to Home</a>
       </div>
