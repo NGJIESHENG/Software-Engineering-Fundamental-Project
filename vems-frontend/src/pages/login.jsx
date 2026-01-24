@@ -1,43 +1,42 @@
-import React from 'react';
-import {useState} from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-function LoginPage(){
-    const [User_ID, setUser_ID] = useState('');
-    const [Password,setPassword] = useState('');
+function LoginPage() {
     const navigate = useNavigate();
-
-    const handleLogin = async (e)=> {
+    
+    // FIX: Initialize with empty strings to prevent uncontrolled->controlled warning
+    const [formData, setFormData] = useState({
+        User_ID: '',
+        Password: ''
+    });
+    const [loading, setLoading] = useState(false);
+    const handleLogin = async (e) => {
         e.preventDefault();
-        alert(`Login Attempt \nUser ID: ${User_ID}\nStatus: Authenticating...`);
+        alert(`Login Attempt \nUser ID: ${formData.User_ID}\nStatus: Authenticating...`);
         try {
             const response = await fetch('http://localhost:5000/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({User_ID, Password}),  
+                body: JSON.stringify(formData),
             });
-
-        const data = await response.json();
-
-        const loggedInUser = data.user || data.items;
-
-        if (response.ok && loggedInUser) {
-            localStorage.setItem('token', data.token); 
-            localStorage.setItem('currentUser', JSON.stringify(data.user));
-            
-            
-            const role = loggedInUser.Role.toLowerCase().trim();
-
-            if (role === 'admin') {
-                navigate('/admin-dashboard');
+            const data = await response.json();
+            if (response.ok) {
+                // Store minimal data in localStorage
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user_id', data.user.User_ID);
+                console.log('Login successful for:', data.user.User_ID);
+                alert(`Welcome, ${data.user.Name}!`);
+                const role = data.user.Role.toLowerCase().trim();
+                if (role === 'admin') {
+                    navigate('/admin-dashboard');
+                } else {
+                    navigate('/homepage');
+                }
             } else {
-                navigate('/homepage');
+                alert(data.message || 'Login failed');
             }
-        } else {
-    alert("Login failed: " + data.message);
-}
         } catch (error) {
             console.error("Connection error:", error);
             alert("Could not connect to the server.");
@@ -90,20 +89,20 @@ function LoginPage(){
                 <form onSubmit={handleLogin}>
                     <label style={{ fontWeight: 'bold '}}>User ID</label>
                     <input 
-                        style={inputStyle}
-                        type="text"
+                        style={inputStyle} 
+                        type="text" 
                         placeholder="Enter your ID (e.g. 243UC247D5)"
-                        value={User_ID}
-                        onChange={(e) => setUser_ID(e.target.value)}
+                        value={formData.User_ID}
+                        onChange={(e) => setFormData({...formData, User_ID: e.target.value})} 
                         required/>
 
                     <label style={{ fontWeight: 'bold'}}>Password</label>
-                    < input
-                        style={inputStyle}
-                        type="Password"
-                        placeholder="Enter Password"
-                        value={Password}
-                        onChange={(e) => setPassword(e.target.value)}
+                    <input 
+                        style={inputStyle} 
+                        type="password" 
+                        placeholder="Enter password" 
+                        value={formData.Password}
+                        onChange={(e) => setFormData({...formData, Password: e.target.value})} 
                         required/>
 
                     <button type="submit" style={buttonStyle}>
