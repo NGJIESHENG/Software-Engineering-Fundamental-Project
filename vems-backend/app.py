@@ -230,6 +230,40 @@ def get_all_venues_list():
         print(f"Error fetching venues: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
+@app.route('/api/bookings-by-date', methods=['GET'])
+def get_bookings_by_date():
+    try:
+        date_str = request.args.get('date') # Expects YYYY-MM-DD
+        
+        if not date_str:
+            return jsonify({"message": "Date parameter is required"}), 400
+
+        # Query bookings for this date, join with Venue to get names
+        bookings = db.session.query(Booking, Venue.Venue_Name, Venue.Venue_Type)\
+            .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
+            .filter(Booking.Date == date_str)\
+            .order_by(Booking.Start_Time.asc())\
+            .all()
+
+        results = []
+        for b, v_name, v_type in bookings:
+            results.append({
+                'id': b.Booking_ID,
+                'event_name': b.Event_Name,
+                'venue': v_name,
+                'venue_type': v_type,
+                'start_time': b.Start_Time,
+                'end_time': b.End_Time,
+                'status': b.Booking_Status,
+                'organizer': b.Organisation or "Private"
+            })
+            
+        return jsonify(results), 200
+        
+    except Exception as e:
+        print(f"Error fetching calendar bookings: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
 @app.route('/api/venue-types', methods=['GET'])
 def get_venue_types():
     try:
