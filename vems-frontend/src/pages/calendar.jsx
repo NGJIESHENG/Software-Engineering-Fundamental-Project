@@ -1,11 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function Calendar() {
     const navigate = useNavigate();
-    const [currentDate, setCurrentDate] = useState(new Date());
-
     
+    // State for navigation (Month/Year view)
+    const [viewDate, setViewDate] = useState(new Date());
+    
+    // State for the specific selected date (clicked by user)
+    const [selectedDate, setSelectedDate] = useState(new Date());
+    
+    // State for bookings
+    const [bookings, setBookings] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Helpers
+    const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    
+    const years = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i); // Current year +/- 5
+
+    // Fetch bookings when selectedDate changes
+    useEffect(() => {
+        fetchBookings(selectedDate);
+    }, [selectedDate]);
+
+    const fetchBookings = async (dateObj) => {
+        setIsLoading(true);
+        try {
+            // Format date to YYYY-MM-DD manually to avoid timezone shifts
+            const offset = dateObj.getTimezoneOffset();
+            const localDate = new Date(dateObj.getTime() - (offset * 60 * 1000));
+            const dateStr = localDate.toISOString().split('T')[0];
+
+            const response = await axios.get(`http://localhost:5000/api/bookings-by-date?date=${dateStr}`);
+            setBookings(response.data);
+        } catch (error) {
+            console.error("Error fetching bookings:", error);
+            setBookings([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleMonthChange = (e) => {
+        const newDate = new Date(viewDate);
+        newDate.setMonth(parseInt(e.target.value));
+        setViewDate(newDate);
+    };
+
+    const handleYearChange = (e) => {
+        const newDate = new Date(viewDate);
+        newDate.setFullYear(parseInt(e.target.value));
+        setViewDate(newDate);
+    };
+
+    const handleDayClick = (day) => {
+        const newSelected = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
+        setSelectedDate(newSelected);
+    };
+
+    // --- STYLES ---
     const pageStyle = {
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #2419F0, #6F58FF)',
@@ -14,67 +72,205 @@ function Calendar() {
     };
 
     const calendarCard = {
-        maxWidth: '900px',
+        maxWidth: '1000px',
         margin: '0 auto',
         background: 'white',
         borderRadius: '15px',
         padding: '30px',
-        boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+        boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '30px'
     };
 
-    
-    const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
-    const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+    const controlPanel = {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '20px',
+        borderBottom: '1px solid #e2e8f0',
+        paddingBottom: '20px'
+    };
 
-    const days = [];
-    
-    for (let i = 0; i < firstDayOfMonth; i++) {
-        days.push(<div key={`empty-${i}`} style={{ padding: '20px' }}></div>);
-    }
-    
-    for (let d = 1; d <= daysInMonth(currentDate.getFullYear(), currentDate.getMonth()); d++) {
-        days.push(
-            <div key={d} style={{
-                padding: '20px',
-                border: '1px solid #e2e8f0',
-                textAlign: 'center',
-                borderRadius: '8px',
-                backgroundColor: d === new Date().getDate() ? '#ebf8ff' : 'transparent',
-                fontWeight: d === new Date().getDate() ? 'bold' : 'normal'
-            }}>
-                {d}
-                {/* Future: Add small dots here if there is a booking in vems.db */}
-            </div>
-        );
-    }
+    const selectStyle = {
+        padding: '8px 12px',
+        fontSize: '16px',
+        borderRadius: '6px',
+        border: '1px solid #cbd5e0',
+        marginLeft: '10px',
+        cursor: 'pointer'
+    };
+
+    const gridHeader = {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(7, 1fr)',
+        gap: '10px',
+        textAlign: 'center',
+        fontWeight: 'bold',
+        color: '#4a5568',
+        marginBottom: '10px'
+    };
+
+    const bookingsSection = {
+        background: '#f7fafc',
+        borderRadius: '10px',
+        padding: '20px',
+        border: '1px solid #e2e8f0'
+    };
+
+    const bookingItem = {
+        background: 'white',
+        padding: '15px',
+        borderRadius: '8px',
+        marginBottom: '10px',
+        borderLeft: '4px solid #3182ce',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+    };
+
+    // Calendar Logic
+    const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+    const firstDayOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay();
+
+    const renderDays = () => {
+        const days = [];
+        
+        // Empty slots for days before start of month
+        for (let i = 0; i < firstDayOfMonth; i++) {
+            days.push(<div key={`empty-${i}`}></div>);
+        }
+        
+        // Actual days
+        const totalDays = daysInMonth(viewDate.getFullYear(), viewDate.getMonth());
+        
+        for (let d = 1; d <= totalDays; d++) {
+            const isSelected = 
+                selectedDate.getDate() === d && 
+                selectedDate.getMonth() === viewDate.getMonth() && 
+                selectedDate.getFullYear() === viewDate.getFullYear();
+
+            days.push(
+                <div 
+                    key={d} 
+                    onClick={() => handleDayClick(d)}
+                    style={{
+                        padding: '15px',
+                        border: isSelected ? '2px solid #3182ce' : '1px solid #e2e8f0',
+                        textAlign: 'center',
+                        borderRadius: '8px',
+                        backgroundColor: isSelected ? '#ebf8ff' : 'white',
+                        fontWeight: isSelected ? 'bold' : 'normal',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        color: '#2d3748'
+                    }}
+                    onMouseEnter={(e) => { if(!isSelected) e.currentTarget.style.backgroundColor = '#f7fafc'}}
+                    onMouseLeave={(e) => { if(!isSelected) e.currentTarget.style.backgroundColor = 'white'}}
+                >
+                    {d}
+                </div>
+            );
+        }
+        return days;
+    };
+
+    const formatDateDisplay = (date) => {
+        return date.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    };
+
+    const getStatusColor = (status) => {
+        if(status === 'Approved') return '#c6f6d5'; // Green
+        if(status === 'Pending') return '#feebc8'; // Orange
+        return '#fed7d7'; // Red
+    };
 
     return (
         <div style={pageStyle}>
             <div style={calendarCard}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                    <button onClick={() => navigate('/homepage')} style={{ padding: '10px 20px', cursor: 'pointer', borderRadius: '5px', border: '1px solid #2b6cb0', color: '#2b6cb0' }}>
-                        ← Back to Home
+                
+                {/* Header Controls */}
+                <div style={controlPanel}>
+                    <button onClick={() => navigate('/homepage')} style={{ padding: '8px 16px', cursor: 'pointer', borderRadius: '5px', border: '1px solid #718096', background: 'white', color: '#4a5568' }}>
+                        ← Back
                     </button>
-                    <h2 style={{ color: '#2b6cb0', margin: 0 }}>
-                        {currentDate.toLocaleString('default', { month: 'long' })} {currentDate.getFullYear()}
-                    </h2>
-                    <div style={{ width: '100px' }}></div> {/* Spacer */}
+                    
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <select value={viewDate.getMonth()} onChange={handleMonthChange} style={selectStyle}>
+                            {months.map((m, index) => (
+                                <option key={m} value={index}>{m}</option>
+                            ))}
+                        </select>
+                        
+                        <select value={viewDate.getFullYear()} onChange={handleYearChange} style={selectStyle}>
+                            {years.map(y => (
+                                <option key={y} value={y}>{y}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(7, 1fr)',
-                    gap: '10px',
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    color: '#4a5568',
-                    marginBottom: '10px'
-                }}>
-                    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                {/* Calendar Grid */}
+                <div>
+                    <div style={gridHeader}>
+                        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px' }}>
+                        {renderDays()}
+                    </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px' }}>
-                    {days}
+                {/* Selected Date Details */}
+                <div style={bookingsSection}>
+                    <h3 style={{ marginTop: 0, color: '#2d3748', borderBottom: '2px solid #cbd5e0', paddingBottom: '10px' }}>
+                        📅 Bookings for {formatDateDisplay(selectedDate)}
+                    </h3>
+                    
+                    {isLoading ? (
+                        <p>Loading bookings...</p>
+                    ) : bookings.length > 0 ? (
+                        <div>
+                            {bookings.map((booking) => (
+                                <div key={booking.id} style={{
+                                    ...bookingItem,
+                                    borderLeftColor: booking.status === 'Approved' ? '#48bb78' : '#ed8936'
+                                }}>
+                                    <div>
+                                        <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#2d3748' }}>{booking.event_name}</div>
+                                        <div style={{ color: '#4a5568', fontSize: '14px', marginTop: '4px' }}>
+                                            📍 {booking.venue} ({booking.venue_type})
+                                        </div>
+                                        <div style={{ color: '#718096', fontSize: '12px', marginTop: '4px' }}>
+                                            Organized by: {booking.organizer}
+                                        </div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontWeight: 'bold', color: '#2b6cb0' }}>
+                                            {booking.start_time} - {booking.end_time}
+                                        </div>
+                                        <span style={{ 
+                                            display: 'inline-block', 
+                                            marginTop: '5px',
+                                            padding: '2px 8px', 
+                                            borderRadius: '12px', 
+                                            fontSize: '12px',
+                                            background: getStatusColor(booking.status),
+                                            color: '#2d3748',
+                                            fontWeight: '600'
+                                        }}>
+                                            {booking.status}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: '20px', color: '#718096' }}>
+                            <p style={{ fontSize: '40px', margin: '0 0 10px 0' }}>🗓️</p>
+                            <p>No bookings found for this date.</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

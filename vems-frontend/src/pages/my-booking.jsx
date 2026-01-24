@@ -34,7 +34,8 @@ function MyBooking() {
         createButton: { display: 'block', margin: '0 auto 30px', padding: '12px 30px', background: '#38a169', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' },
         modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
         modalContainer: { background: 'white', borderRadius: '12px', padding: '30px', width: '90%', maxWidth: '600px', maxHeight: '80vh', overflowY: 'auto' },
-        modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '15px' }
+        modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '15px' },
+        backButton: { display: 'block', margin: '40px auto 0', padding: '12px 30px', background: '#718096', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'background 0.3s' },
     };
 
     useEffect(() => {
@@ -168,6 +169,12 @@ function MyBooking() {
                     </div>
                 </div>
             )}
+            <button 
+                style={styles.backButton} 
+                onClick={() => navigate('/homepage')}
+            >
+                ← Back to Home
+            </button>
         </div>
     );
 

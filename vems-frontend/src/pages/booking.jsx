@@ -684,6 +684,12 @@ function Booking() {
             >
                 Continue to Booking Form →
             </button>
+            <button 
+                style={styles.continueButton} 
+                onClick={() => navigate('/homepage')}
+            >
+                ← Back to Home
+            </button>
         </div>
     );
 }

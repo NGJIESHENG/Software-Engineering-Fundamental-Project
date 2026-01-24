@@ -168,6 +168,7 @@ def login():
     except Exception as e:
         print(f"Database Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+    
 @app.route('/api/user/<user_id>', methods=['GET'])
 @jwt_required()
 def get_user(user_id):
@@ -190,6 +191,7 @@ def get_user(user_id):
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+    
 @app.route ('/api/update_phone',methods = ['POST'])
 def update_phone():
     data = request.json
@@ -210,6 +212,58 @@ def update_phone():
         db.session.rollback()
         return jsonify({"message": "Internal Server Error"}), 500
 
+@app.route('/api/venues', methods=['GET'])
+def get_all_venues_list():
+    try:
+        venues = Venue.query.all()
+        result = []
+        for v in venues:
+            result.append({
+                'id': v.Venue_ID,
+                'name': v.Venue_Name,
+                'capacity': v.Capacity,
+                'status': v.Status,
+                'type': v.Venue_Type
+            })
+        return jsonify(result), 200
+    except Exception as e:
+        print(f"Error fetching venues: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
+@app.route('/api/bookings-by-date', methods=['GET'])
+def get_bookings_by_date():
+    try:
+        date_str = request.args.get('date') # Expects YYYY-MM-DD
+        
+        if not date_str:
+            return jsonify({"message": "Date parameter is required"}), 400
+
+        # Query bookings for this date, join with Venue to get names
+        bookings = db.session.query(Booking, Venue.Venue_Name, Venue.Venue_Type)\
+            .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
+            .filter(Booking.Date == date_str)\
+            .order_by(Booking.Start_Time.asc())\
+            .all()
+
+        results = []
+        for b, v_name, v_type in bookings:
+            results.append({
+                'id': b.Booking_ID,
+                'event_name': b.Event_Name,
+                'venue': v_name,
+                'venue_type': v_type,
+                'start_time': b.Start_Time,
+                'end_time': b.End_Time,
+                'status': b.Booking_Status,
+                'organizer': b.Organisation or "Private"
+            })
+            
+        return jsonify(results), 200
+        
+    except Exception as e:
+        print(f"Error fetching calendar bookings: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
 @app.route('/api/venue-types', methods=['GET'])
 def get_venue_types():
     try:
@@ -221,7 +275,7 @@ def get_venue_types():
             }
             for t in types
         ]
-        
+        print(type_list)
         return jsonify(type_list), 200
     except Exception as e:
         print(f"Database Error: {e}")
@@ -231,7 +285,10 @@ def get_venue_types():
 @app.route('/api/venues-by-type/<type_id>', methods=['GET'])
 def get_venues_by_type(type_id):
     try:
-        type_name = ' '.join(word.capitalize() for word in type_id.split('_'))
+        if type_id.lower() == 'fci':
+            type_name = 'FCI'
+        else:
+            type_name = ' '.join(word.capitalize() for word in type_id.split('_'))
         
         venues = Venue.query.filter_by(Venue_Type=type_name).all()
         venues_list = []
@@ -307,12 +364,10 @@ def check_availability():
 @jwt_required()
 def create_booking():
     try:
-        # get_jwt_identity() now returns a string (User_ID), not a dict
         user_id_from_token = get_jwt_identity()
         
         data = request.json
 
-        # Compare user_id directly (both are strings now)
         if data.get('user_id') != user_id_from_token:
             return jsonify({"message": "Unauthorized: You can only book for yourself"}), 403
         
