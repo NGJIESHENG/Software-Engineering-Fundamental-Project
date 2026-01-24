@@ -117,7 +117,7 @@ const [userData, setUserData]= useState({
   const backgroundstyle = {
     width: '100%',
     minHeight: '97.8vh',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    background: 'linear-gradient(135deg,#c1e2ff, #d6f2ff)',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
@@ -130,12 +130,12 @@ const [userData, setUserData]= useState({
     maxWidth: '700px',
     backgroundColor: '#ffffff',
     borderRadius: '12px',
-    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
+    boxShadow: '0 10px 40px rgb(161, 155, 180)',
     overflow: 'hidden'
   };
 
   const headerstyle = {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    background: 'linear-gradient(135deg, #8fbcf1 0%, #8b94e4 100%)',
     padding: '30px 20px',
     color: '#ffffff',
     textAlign: 'center',

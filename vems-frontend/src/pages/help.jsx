@@ -4,7 +4,7 @@ function Help() {
   const backgroundStyle = {
     width: '100%',
     minHeight: '97.5vh',
-    background: 'linear-gradient(135deg, #4b42f5, #6F58FF)',
+    background: 'linear-gradient(135deg,#c1e2ff, #d6f2ff)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -29,7 +29,7 @@ function Help() {
       marginBottom: '22px',
     },
     question: {
-      backgroundColor: '#829df7',
+      backgroundColor: '#cad5f9',
       color: '#1e3a8a',
       padding: '15px',
       borderRadius: '8px',

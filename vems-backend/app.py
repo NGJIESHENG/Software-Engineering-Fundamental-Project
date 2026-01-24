@@ -172,11 +172,10 @@ def login():
 @jwt_required()
 def get_user(user_id):
     try:
-        # Verify the token's user matches the requested user
         current_user_id = get_jwt_identity()
         if current_user_id != user_id:
             return jsonify({"message": "Unauthorized"}), 403
-        
+
         user = User.query.filter_by(User_ID=user_id).first()
         if not user:
             return jsonify({"message": "User not found"}), 404
@@ -691,7 +690,55 @@ def update_booking():
         db.session.rollback() # Rollback in case of error to keep DB clean
         print(f"Error updating booking: {str(e)}")
         return jsonify({'message': 'Internal Server Error', 'error': str(e)}), 500
+@app.route('/api/notifications/<user_id>', methods=['GET'])
+@jwt_required()
 
+def get_notifications(user_id):
+    try:
+        current_user_id = get_jwt_identity()
+        if current_user_id != user_id:
+            return jsonify({"message": "Unauthorized"}), 403
+        notifications = db.session.query(
+            Booking.Booking_ID,
+            Booking.Event_Name,
+            Booking.Date,
+            Booking.Start_Time,
+            Booking.End_Time,
+            Booking.Booking_Status,
+            Venue.Venue_Name,
+            RequestLog.Action_Time,
+            RequestLog.Reason_Notes,
+            RequestLog.New_Status
+        )\
+        .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
+        .join(RequestLog, Booking.Booking_ID == RequestLog.Booking_ID)\
+        .filter(Booking.User_ID == user_id)\
+        .filter(RequestLog.New_Status.in_(['Approved', 'Rejected']))\
+        .order_by(RequestLog.Action_Time.desc())\
+        .limit(20)\
+        .all()
+        notifications_list = []
+        for b_id, event, date, start_time, end_time, status, venue, action_time, reason, new_status in notifications:
+            notifications_list.append({
+                'id': b_id,
+                'booking_id': b_id,
+                'event_name': event,
+                'date': date,
+                'start_time': start_time,
+                'end_time': end_time,
+                'status': new_status,
+                'venue_name': venue,
+                'action_time': action_time,
+                'reason': reason,
+                'type': 'approval' if new_status == 'Approved' else 'rejection'
+            })
+        return jsonify({
+            'notifications': notifications_list,
+            'count': len(notifications_list)
+        }), 200
+    except Exception as e:
+        print(f"Error fetching notifications: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
 with app.app_context():
     db.create_all()
     populate_initial_data()
