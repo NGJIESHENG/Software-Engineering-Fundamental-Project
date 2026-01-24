@@ -606,6 +606,167 @@ def get_all_bookings():
     except Exception as e:
         return jsonify({"message": str(e)}), 500
     
+@app.route('/api/admin/master-schedule', methods=['GET'])
+def get_master_schedule():
+    # Returns ONLY APPROVED bookings for the schedule view
+    try:
+        bookings = db.session.query(Booking, Venue.Venue_Name, User.Name, User.User_ID)\
+            .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
+            .join(User, Booking.User_ID == User.User_ID)\
+            .filter(Booking.Booking_Status == 'Approved')\
+            .order_by(Booking.Date.desc())\
+            .all()
+            
+        output = []
+        for b, v_name, u_name, u_id in bookings:
+            output.append({
+                "booking_id": b.Booking_ID, 
+                "event_name": b.Event_Name, 
+                "date": b.Date,
+                "start_time": b.Start_Time, 
+                "end_time": b.End_Time, 
+                "status": b.Booking_Status,
+                "venue_name": v_name, 
+                "venue_id": b.Venue_ID, 
+                "user_name": u_name, 
+                "user_id": u_id,
+                "description": b.Description, 
+                "participants": b.Estimated_Participants
+            })
+        return jsonify(output), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+    
+@app.route('/api/admin/users', methods=['GET'])
+def get_all_users():
+    try:
+        users = User.query.filter(User.Role != 'Admin').all()
+        
+        result = [{
+            "User_ID": u.User_ID, 
+            "Name": u.Name, 
+            "Email": u.Email, 
+            "Role": u.Role, 
+            "Phone": u.Phone
+        } for u in users]
+        
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+@app.route('/api/admin/user/<user_id>', methods=['PUT'])
+def update_user_details(user_id):
+    try:
+        data = request.json
+        user = User.query.get(user_id)
+        if not user: return jsonify({"message": "User not found"}), 404
+        
+        if 'Name' in data: user.Name = data['Name']
+        if 'Email' in data: user.Email = data['Email']
+        if 'Role' in data: user.Role = data['Role']
+        if 'Phone' in data: user.Phone = data['Phone']
+        
+        db.session.commit()
+        return jsonify({"message": "User updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+@app.route('/api/admin/user/<user_id>/reset-password', methods=['POST'])
+def reset_user_password(user_id):
+    try:
+        data = request.json
+        new_password = data.get('new_password')
+        if not new_password: return jsonify({"message": "Password required"}), 400
+        
+        user = User.query.get(user_id)
+        if not user: return jsonify({"message": "User not found"}), 404
+        
+        user.Password = bcrypt.generate_password_hash(new_password)
+        db.session.commit()
+        return jsonify({"message": "Password reset successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+@app.route('/api/admin/user/<user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    try:
+        user = User.query.get(user_id)
+        if not user: return jsonify({"message": "User not found"}), 404
+        # Note: You might need to handle cascading deletes (bookings/logs) depending on DB strictness
+        # For now we just delete the user.
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({"message": "User deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+@app.route('/api/admin/reports', methods=['GET'])
+def get_system_reports():
+    try:
+        # Total Users
+        total_users = User.query.count()
+        
+        # Role Distribution
+        role_dist = db.session.query(User.Role, db.func.count(User.Role)).group_by(User.Role).all()
+        role_data = [{"name": r[0], "value": r[1]} for r in role_dist]
+
+        # Status Distribution
+        status_dist = db.session.query(Booking.Booking_Status, db.func.count(Booking.Booking_Status)).group_by(Booking.Booking_Status).all()
+        status_data = [{"name": s[0], "value": s[1]} for s in status_dist]
+        
+        # Booking Frequency by Venue (Top 5)
+        venue_freq = db.session.query(Venue.Venue_Name, db.func.count(Booking.Booking_ID))\
+            .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
+            .group_by(Venue.Venue_Name)\
+            .order_by(db.func.count(Booking.Booking_ID).desc()).limit(5).all()
+        venue_data = [{"name": v[0], "value": v[1]} for v in venue_freq]
+
+        return jsonify({
+            "total_users": total_users,
+            "roles": role_data,
+            "statuses": status_data,
+            "top_venues": venue_data
+        }), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+    
+@app.route('/api/admin/logs', methods=['GET'])
+def get_logs():
+    try:
+        # Filters
+        admin_id = request.args.get('admin_id')
+        action_type = request.args.get('action_type')
+        date = request.args.get('date') # Filter by date part of Action_Time
+        
+        query = RequestLog.query
+        
+        if admin_id:
+            query = query.filter(RequestLog.Admin_ID.contains(admin_id))
+        if action_type:
+            query = query.filter(RequestLog.Action_Type == action_type)
+        if date:
+            # Assumes Action_Time stored as "YYYY-MM-DD HH:MM:SS"
+            query = query.filter(RequestLog.Action_Time.like(f"{date}%"))
+            
+        logs = query.order_by(RequestLog.Action_Time.desc()).all()
+        
+        result = []
+        for log in logs:
+            result.append({
+                "Log_ID": log.Log_ID,
+                "Booking_ID": log.Booking_ID,
+                "Admin_ID": log.Admin_ID,
+                "Action_Type": log.Action_Type,
+                "Action_Time": log.Action_Time,
+                "Old_Status": log.Old_Status,
+                "New_Status": log.New_Status,
+                "Reason": log.Reason_Notes
+            })
+            
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
 @app.route('/api/admin/decide-booking', methods=['POST'])
 
 def decide_booking():

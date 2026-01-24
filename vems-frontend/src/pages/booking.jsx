@@ -504,6 +504,21 @@ function Booking() {
             default: return '#718096';
         }
     };
+
+    const getMissingFieldsMessage = () => {
+        const missing = [];
+        if (!selectedDate) missing.push("Date");
+        if (!selectedVenueType) missing.push("Venue Type");
+        if (!selectedVenue) missing.push("Specific Venue");
+        if (!startTime) missing.push("Start Time");
+        if (!endTime) missing.push("End Time");
+        if (timeError) missing.push("Valid Time Format");
+        
+        if (missing.length > 0) {
+            return `Please select: ${missing.join(', ')}`;
+        }
+        return null;
+    };
     
     return (
         <div style={styles.container}>
@@ -672,6 +687,12 @@ function Booking() {
                         </div>
                     )}
                 </div>
+            )}
+
+            {isContinueDisabled && (
+                <p style={{ color: '#e53e3e', fontSize: '14px', textAlign: 'center', marginTop: '10px' }}>
+                    ⚠️ {getMissingFieldsMessage()}
+                </p>
             )}
 
             <button 
