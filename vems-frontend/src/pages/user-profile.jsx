@@ -8,7 +8,7 @@ const [userData, setUserData]= useState({
   Name: '',
   User_ID: '',
   Email: '',
-  Phone: '',
+  Phone: null,
   Role: '',
 });
 
@@ -18,15 +18,34 @@ const [loading, setLoading] = useState(false);
 const [message, setMessage] = useState('');
 
 useEffect(() => {
-  const storedUserData = JSON.parse(localStorage.getItem('userData'));
-  if (storedUserData) {
-    setUserData(storedUserData);
-  }else{
-    navigate('/login');
-  }
+  const fetchUserData = async () => {
+    const token = localStorage.getItem('token');
+    const storedUserData = JSON.parse(localStorage.getItem('userData'));
+    if (!token || !storedUserData) {
+      navigate('/login');
+      return;
+    }
+    try {
+      const response = await fetch(`http://localhost:5000/api/user/${storedUserData.User_ID}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUserData(data);
+      } else {
+        navigate('/login');
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      navigate('/login');
+    }
+  };
+  fetchUserData();
 }, [navigate]);
 const handle_Edit = () => {
-  set_temp_Phone(userData.Phone || '');
+  set_temp_Phone(userData.Phone ?? '');
   set_editing_Phone(true);
   setMessage('');
 };
@@ -37,24 +56,33 @@ const handleCancel = () => {
 };
 const handle_save = async (e) => {
   e.preventDefault();
-    setLoading(true);
-    setMessage('');
+  setLoading(true);
+  setMessage('');
   try {
     const response = await fetch('http://localhost:5000/api/update_phone', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
-        body: JSON.stringify({
+      body: JSON.stringify({
         User_ID: userData.User_ID,
-        Phone: temp_Phone,
+        Phone: temp_Phone === '' ? null : temp_Phone,
       }),
-      });
+    });
     const data = await response.json();
     if (response.ok) {
-      const updatedUserData = { ...userData, Phone: temp_Phone };
-      setUserData(updatedUserData);
-      localStorage.setItem('userData', JSON.stringify(updatedUserData));
+      const userResponse = await fetch(`http://localhost:5000/api/user/${userData.User_ID}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (userResponse.ok) {
+        const freshUserData = await userResponse.json();
+        setUserData(freshUserData);
+      }
+      
       set_editing_Phone(false);
       setMessage('Phone updated successfully!');
     } else {
@@ -178,9 +206,10 @@ const handle_save = async (e) => {
                   type="text"
                   value={temp_Phone}
                   onChange={(e) => set_temp_Phone(e.target.value)}
-                  style={inputStyle}placeholder="Enter phone number"/>
+                  style={inputStyle}
+                  placeholder="Enter phone number"/>
                 <div style={{display: 'flex', gap: '10px'}}>
-                  <button onClick={handle_save} style={buttonStyle}disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
+                  <button onClick={handle_save} style={buttonStyle} disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
                   <button onClick={handleCancel} style={{...buttonStyle, backgroundColor: '#6c757d'}}>Cancel</button>
                 </div>
               </>

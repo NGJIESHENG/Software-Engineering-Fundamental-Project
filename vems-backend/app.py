@@ -168,7 +168,29 @@ def login():
     except Exception as e:
         print(f"Database Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
-
+@app.route('/api/user/<user_id>', methods=['GET'])
+@jwt_required()
+def get_user(user_id):
+    try:
+        # Verify the token's user matches the requested user
+        current_user_id = get_jwt_identity()
+        if current_user_id != user_id:
+            return jsonify({"message": "Unauthorized"}), 403
+        
+        user = User.query.filter_by(User_ID=user_id).first()
+        if not user:
+            return jsonify({"message": "User not found"}), 404
+        
+        return jsonify({
+            "Name": user.Name,
+            "User_ID": user.User_ID,
+            "Email": user.Email,
+            "Role": user.Role,
+            "Phone": user.Phone
+        }), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
 @app.route ('/api/update_phone',methods = ['POST'])
 def update_phone():
     data = request.json
