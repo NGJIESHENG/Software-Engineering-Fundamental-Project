@@ -26,6 +26,7 @@ function LoginPage() {
                 // Store minimal data in localStorage
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user_id', data.user.User_ID);
+                localStorage.setItem('currentUser', JSON.stringify(data.user));
                 console.log('Login successful for:', data.user.User_ID);
                 alert(`Welcome, ${data.user.Name}!`);
                 const role = data.user.Role.toLowerCase().trim();

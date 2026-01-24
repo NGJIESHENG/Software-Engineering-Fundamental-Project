@@ -168,6 +168,7 @@ def login():
     except Exception as e:
         print(f"Database Error: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
+    
 @app.route('/api/user/<user_id>', methods=['GET'])
 @jwt_required()
 def get_user(user_id):
