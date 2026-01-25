@@ -284,6 +284,7 @@ def get_bookings_by_date():
         bookings = db.session.query(Booking, Venue.Venue_Name, Venue.Venue_Type)\
             .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
             .filter(Booking.Date == date_str)\
+            .filter(Booking.Booking_Status == 'Approved')\
             .order_by(Booking.Start_Time.asc())\
             .all()
 

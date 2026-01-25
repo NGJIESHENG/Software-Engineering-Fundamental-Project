@@ -123,7 +123,7 @@ function Calendar() {
         padding: '15px',
         borderRadius: '8px',
         marginBottom: '10px',
-        borderLeft: '4px solid #3182ce',
+        borderLeft: '4px solid #48bb78', // Fixed to Green (Approved)
         boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
         display: 'flex',
         justifyContent: 'space-between',
@@ -180,12 +180,6 @@ function Calendar() {
         return date.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     };
 
-    const getStatusColor = (status) => {
-        if(status === 'Approved') return '#c6f6d5'; // Green
-        if(status === 'Pending') return '#feebc8'; // Orange
-        return '#fed7d7'; // Red
-    };
-
     return (
         <div style={pageStyle}>
             <div style={calendarCard}>
@@ -224,7 +218,7 @@ function Calendar() {
                 {/* Selected Date Details */}
                 <div style={bookingsSection}>
                     <h3 style={{ marginTop: 0, color: '#2d3748', borderBottom: '2px solid #cbd5e0', paddingBottom: '10px' }}>
-                        📅 Bookings for {formatDateDisplay(selectedDate)}
+                        📅 Approved Events for {formatDateDisplay(selectedDate)}
                     </h3>
                     
                     {isLoading ? (
@@ -232,10 +226,7 @@ function Calendar() {
                     ) : bookings.length > 0 ? (
                         <div>
                             {bookings.map((booking) => (
-                                <div key={booking.id} style={{
-                                    ...bookingItem,
-                                    borderLeftColor: booking.status === 'Approved' ? '#48bb78' : '#ed8936'
-                                }}>
+                                <div key={booking.id} style={bookingItem}>
                                     <div>
                                         <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#2d3748' }}>{booking.event_name}</div>
                                         <div style={{ color: '#4a5568', fontSize: '14px', marginTop: '4px' }}>
@@ -249,18 +240,6 @@ function Calendar() {
                                         <div style={{ fontWeight: 'bold', color: '#2b6cb0' }}>
                                             {booking.start_time} - {booking.end_time}
                                         </div>
-                                        <span style={{ 
-                                            display: 'inline-block', 
-                                            marginTop: '5px',
-                                            padding: '2px 8px', 
-                                            borderRadius: '12px', 
-                                            fontSize: '12px',
-                                            background: getStatusColor(booking.status),
-                                            color: '#2d3748',
-                                            fontWeight: '600'
-                                        }}>
-                                            {booking.status}
-                                        </span>
                                     </div>
                                 </div>
                             ))}
@@ -268,7 +247,7 @@ function Calendar() {
                     ) : (
                         <div style={{ textAlign: 'center', padding: '20px', color: '#718096' }}>
                             <p style={{ fontSize: '40px', margin: '0 0 10px 0' }}>🗓️</p>
-                            <p>No bookings found for this date.</p>
+                            <p>No events found for this date.</p>
                         </div>
                     )}
                 </div>
