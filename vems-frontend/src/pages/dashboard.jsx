@@ -2,62 +2,19 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-class Node {
-    constructor(data) {
-        this.data = data;
-        this.next = null;
-    }
-}
-
-// Used to store and traverse the schedule of bookings for the day
-class BookingLinkedList {
-    constructor() {
-        this.head = null;
-        this.size = 0;
-    }
-
-    // Insert sorted by start time
-    addSorted(booking) {
-        const newNode = new Node(booking);
-        
-        // If list is empty or new booking is earlier than head
-        if (!this.head || booking.start < this.head.data.start) {
-            newNode.next = this.head;
-            this.head = newNode;
-        } else {
-            let current = this.head;
-            // Traverse to find correct position
-            while (current.next && current.next.data.start < booking.start) {
-                current = current.next;
-            }
-            newNode.next = current.next;
-            current.next = newNode;
-        }
-        this.size++;
-    }
-
-    // Convert to Array for React Rendering
-    toArray() {
-        const arr = [];
-        let current = this.head;
-        while (current) {
-            arr.push(current.data);
-            current = current.next;
-        }
-        return arr;
-    }
-}
-
 function Dashboard() {
     const navigate = useNavigate();
 
+    // --- STATE MANAGEMENT ---
     const [venues, setVenues] = useState([]); // Array
     const [venueLookup, setVenueLookup] = useState({}); // Dictionary
     
     const [selectedDate, setSelectedDate] = useState('');
     const [selectedVenueId, setSelectedVenueId] = useState('');
     
-    const [scheduleList, setScheduleList] = useState(new BookingLinkedList()); // Linked List
+    // MODIFIED: Using a standard Array instead of Linked List
+    const [scheduleList, setScheduleList] = useState([]); 
+    
     const [currentVenueStatus, setCurrentVenueStatus] = useState(null);
     const [hasSearched, setHasSearched] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -94,6 +51,7 @@ function Dashboard() {
                 const res = await axios.get('http://localhost:5000/api/venues');
                 setVenues(res.data); // Store as Array
 
+                // Create Dictionary (Hash Map) for O(1) lookup
                 const lookup = {};
                 res.data.forEach(v => {
                     lookup[v.id] = v;
@@ -118,9 +76,7 @@ function Dashboard() {
             // Check global status via Dictionary lookup first (Client side check)
             const venueBasicInfo = venueLookup[selectedVenueId];
             if (venueBasicInfo && venueBasicInfo.status !== 'Available') {
-                // If globally closed, we might still want to show schedule, 
-                // but usually we warn the user immediately.
-                // For this logic, we continue to fetch the specific day details.
+                // Logic can be added here if specific client-side warnings are needed
             }
 
             // Fetch Data from Backend
@@ -129,12 +85,8 @@ function Dashboard() {
             const { venue, schedule } = res.data;
             setCurrentVenueStatus(venue);
 
-            // Populate Linked List
-            const list = new BookingLinkedList();
-            schedule.forEach(booking => {
-                list.addSorted(booking);
-            });
-            setScheduleList(list);
+            // MODIFIED: Directly set the array (Backend handles sorting)
+            setScheduleList(schedule);
 
         } catch (error) {
             console.error(error);
@@ -150,7 +102,7 @@ function Dashboard() {
 
             {/* CONTROL PANEL */}
             <div style={s.controlPanel}>
-                <div style={s.inputGroup}>
+                <div style={{...s.inputGroup, maxWidth: '200px'}}>
                     <label style={s.label}>Select Date</label>
                     <input 
                         type="date" 
@@ -198,16 +150,16 @@ function Dashboard() {
                                 </p>
                             </div>
 
-                            {/* Schedule List (Rendered from Linked List) */}
+                            {/* Schedule List (Rendered from standard Array) */}
                             <h3 style={{ color: '#2b6cb0' }}>📅 Schedule for {selectedDate}</h3>
                             
-                            {scheduleList.size === 0 ? (
+                            {scheduleList.length === 0 ? (
                                 <p style={{ fontStyle: 'italic', color: '#718096', padding: '20px', textAlign: 'center', background: '#edf2f7', borderRadius: '8px' }}>
                                     No approved bookings for this date. The venue is free all day!
                                 </p>
                             ) : (
                                 <div>
-                                    {scheduleList.toArray().map((booking, index) => (
+                                    {scheduleList.map((booking, index) => (
                                         <div key={index} style={s.timelineItem}>
                                             <div style={s.time}>
                                                 {booking.start} - {booking.end}
