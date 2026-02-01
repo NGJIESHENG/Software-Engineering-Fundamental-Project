@@ -368,8 +368,8 @@ function AdminDashboard() {
                             <label>Role</label>
                             <select style={s.input} value={userForm.Role} onChange={e=>setUserForm({...userForm, Role: e.target.value})}>
                                 <option value="Student">Student</option>
-                                <option value="Staff">Staff</option>
-                                <option value="Admin">Admin</option>
+                                <option value="Event Organiser">Event Organiser</option>
+                                <option value="Lecturer">Lecturer</option>
                             </select>
                             <div style={{textAlign:'right'}}>
                                 <button type="button" onClick={()=>setEditingUser(null)} style={{marginRight:'10px', padding:'8px'}}>Cancel</button>

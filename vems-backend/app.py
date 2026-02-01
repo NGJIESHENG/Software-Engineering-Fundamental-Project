@@ -230,6 +230,48 @@ def get_all_venues_list():
         print(f"Error fetching venues: {e}")
         return jsonify({"message": "Internal Server Error"}), 500
 
+@app.route('/api/venue-daily-schedule', methods=['GET'])
+def get_venue_schedule():
+    try:
+        venue_id = request.args.get('venue_id')
+        date_str = request.args.get('date')
+
+        if not venue_id or not date_str:
+            return jsonify({"message": "Venue ID and Date are required"}), 400
+
+        # 1. Check Venue Status
+        venue = Venue.query.get(venue_id)
+        if not venue:
+            return jsonify({"message": "Venue not found"}), 404
+
+        venue_info = {
+            "id": venue.Venue_ID,
+            "name": venue.Venue_Name,
+            "status": venue.Status,
+            "capacity": venue.Capacity,
+            "type": venue.Venue_Type
+        }
+
+        # 2. Get ONLY Approved Bookings for this specific venue and date
+        bookings = Booking.query.filter_by(Venue_ID=venue_id, Date=date_str, Booking_Status='Approved')\
+            .order_by(Booking.Start_Time.asc()).all()
+
+        schedule = []
+        for b in bookings:
+            schedule.append({
+                "id": b.Booking_ID,
+                "start": b.Start_Time,
+                "end": b.End_Time,
+                "event": b.Event_Name,
+                "organizer": b.Organisation or "Private"
+            })
+
+        return jsonify({"venue": venue_info, "schedule": schedule}), 200
+
+    except Exception as e:
+        print(f"Error fetching schedule: {e}")
+        return jsonify({"message": "Internal Server Error"}), 500
+
 @app.route('/api/bookings-by-date', methods=['GET'])
 def get_bookings_by_date():
     try:
@@ -242,6 +284,7 @@ def get_bookings_by_date():
         bookings = db.session.query(Booking, Venue.Venue_Name, Venue.Venue_Type)\
             .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
             .filter(Booking.Date == date_str)\
+            .filter(Booking.Booking_Status == 'Approved')\
             .order_by(Booking.Start_Time.asc())\
             .all()
 
