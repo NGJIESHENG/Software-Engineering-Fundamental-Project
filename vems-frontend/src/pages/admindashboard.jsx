@@ -12,7 +12,6 @@ function AdminDashboard() {
     const [users, setUsers] = useState([]);
     const [reports, setReports] = useState(null);
     const [logs, setLogs] = useState([]);
-
     const [selectedRequest, setSelectedRequest] = useState(null);
     
     // Log Filters
@@ -255,7 +254,6 @@ function AdminDashboard() {
                     <p><strong>Special Requirements:</strong> {selectedRequest.special_requirements || 'None'}</p>
                 </div>
                 
-                {/* 只有一个关闭按钮，让用户回到列表操作 */}
                 <div style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
                     <button onClick={() => setSelectedRequest(null)} style={{...s.btn, background: '#718096'}}>Close</button>
                 </div>
