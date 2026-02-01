@@ -12,6 +12,8 @@ function AdminDashboard() {
     const [users, setUsers] = useState([]);
     const [reports, setReports] = useState(null);
     const [logs, setLogs] = useState([]);
+
+    const [selectedRequest, setSelectedRequest] = useState(null);
     
     // Log Filters
     const [logFilters, setLogFilters] = useState({ admin_id: '', action_type: '', date: '' });
@@ -90,6 +92,22 @@ function AdminDashboard() {
             alert(`Booking ${decision}!`);
         } catch (err) { alert("Error processing request"); }
     };
+
+    const handleViewDetails = async (request) => {
+    try {
+        const res = await axios.get(
+            `http://localhost:5000/api/booking-details?booking_id=${request.id}`, 
+            getHeaders()
+        );
+        setSelectedRequest({
+            ...request,
+            ...res.data
+        });
+    } catch (err) {
+        console.error("Error fetching details:", err);
+        setSelectedRequest(request);
+    }
+};
 
     // --- HANDLERS: SCHEDULE ---
     const handleEventClick = (event) => {
@@ -197,6 +215,12 @@ function AdminDashboard() {
                             <td style={s.td}>{b.venue_name}</td>
                             <td style={s.td}>{b.date}</td>
                             <td style={s.td}>
+                                <button 
+                                onClick={() => handleViewDetails(b)} 
+                                style={{...s.btn, background: '#3182ce', marginRight: '5px'}}
+                            >
+                                View Details
+                            </button>
                                 <button onClick={() => handleDecision(b.id, 'Approved')} style={{...s.btn, background: '#38a169'}}>Approve</button>
                                 <button onClick={() => handleDecision(b.id, 'Rejected')} style={{...s.btn, background: '#e53e3e'}}>Reject</button>
                             </td>
@@ -206,6 +230,39 @@ function AdminDashboard() {
             </table>
         </div>
     );
+
+    const renderRequestDetailsModal = () => {
+    if (!selectedRequest) return null;
+    
+    return (
+        <div style={s.modal} onClick={() => setSelectedRequest(null)}>
+            <div style={s.modalContent} onClick={e => e.stopPropagation()}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: '20px'}}>
+                    <h3>Request Details</h3>
+                    <button onClick={() => setSelectedRequest(null)} style={{background:'none', border:'none', fontSize:'20px', cursor:'pointer'}}>✖</button>
+                </div>
+                
+                <div style={{marginBottom: '20px'}}>
+                    <p><strong>Event:</strong> {selectedRequest.event_name}</p>
+                    <p><strong>Organizer:</strong> {selectedRequest.user_name}</p>
+                    <p><strong>Venue:</strong> {selectedRequest.venue_name} {selectedRequest.venue_type && `(${selectedRequest.venue_type})`}</p>
+                    <p><strong>Date & Time:</strong> {selectedRequest.date} ({selectedRequest.start_time} - {selectedRequest.end_time})</p>
+                    <p><strong>Purpose/Reason:</strong> {selectedRequest.booking_reason || 'Not specified'}</p>
+                    <p><strong>Description:</strong> {selectedRequest.description || 'No description'}</p>
+                    <p><strong>Expected Participants:</strong> {selectedRequest.estimated_participants || 'Not specified'}</p>
+                    <p><strong>Organization:</strong> {selectedRequest.organisation || 'Private'}</p>
+                    <p><strong>Contact Person:</strong> {selectedRequest.contact_name} {selectedRequest.contact_gender && `(${selectedRequest.contact_gender})`}</p>
+                    <p><strong>Special Requirements:</strong> {selectedRequest.special_requirements || 'None'}</p>
+                </div>
+                
+                {/* 只有一个关闭按钮，让用户回到列表操作 */}
+                <div style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
+                    <button onClick={() => setSelectedRequest(null)} style={{...s.btn, background: '#718096'}}>Close</button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
     const renderSchedule = () => (
         <div style={s.card}>
@@ -482,6 +539,8 @@ function AdminDashboard() {
             {activeSection === 'users' && renderUsers()}
             {activeSection === 'reports' && renderReports()}
             {activeSection === 'logs' && renderLogs()}
+
+            {renderRequestDetailsModal()}
         </div>
     );
 }
