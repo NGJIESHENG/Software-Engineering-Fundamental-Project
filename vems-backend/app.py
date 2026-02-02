@@ -746,29 +746,35 @@ def delete_user(user_id):
 @app.route('/api/admin/reports', methods=['GET'])
 def get_system_reports():
     try:
-        # Total Users
-        total_users = User.query.count()
-        
-        # Role Distribution
-        role_dist = db.session.query(User.Role, db.func.count(User.Role)).group_by(User.Role).all()
-        role_data = [{"name": r[0], "value": r[1]} for r in role_dist]
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
 
-        # Status Distribution
-        status_dist = db.session.query(Booking.Booking_Status, db.func.count(Booking.Booking_Status)).group_by(Booking.Booking_Status).all()
-        status_data = [{"name": s[0], "value": s[1]} for s in status_dist]
+        # 1. Total Users (Unfiltered)
+        total_users = User.query.count()
+        role_dist = db.session.query(User.Role, db.func.count(User.Role)).group_by(User.Role).all()
+
+        # 2. Filtered Status Distribution (UC-13)
+        status_query = db.session.query(Booking.Booking_Status, db.func.count(Booking.Booking_ID))
+        if start_date and end_date:
+            status_query = status_query.filter(Booking.Date.between(start_date, end_date))
         
-        # Booking Frequency by Venue (Top 5)
-        venue_freq = db.session.query(Venue.Venue_Name, db.func.count(Booking.Booking_ID))\
-            .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
-            .group_by(Venue.Venue_Name)\
+        status_dist = status_query.group_by(Booking.Booking_Status).all()
+
+        # 3. Filtered Top 5 Venues (UC-13)
+        venue_query = db.session.query(Venue.Venue_Name, db.func.count(Booking.Booking_ID))\
+            .join(Venue, Booking.Venue_ID == Venue.Venue_ID)
+        
+        if start_date and end_date:
+            venue_query = venue_query.filter(Booking.Date.between(start_date, end_date))
+        
+        venue_freq = venue_query.group_by(Venue.Venue_Name)\
             .order_by(db.func.count(Booking.Booking_ID).desc()).limit(5).all()
-        venue_data = [{"name": v[0], "value": v[1]} for v in venue_freq]
 
         return jsonify({
             "total_users": total_users,
-            "roles": role_data,
-            "statuses": status_data,
-            "top_venues": venue_data
+            "roles": [{"name": r[0], "value": r[1]} for r in role_dist],
+            "statuses": [{"name": s[0], "value": s[1]} for s in status_dist],
+            "top_venues": [{"name": v[0], "value": v[1]} for v in venue_freq]
         }), 200
     except Exception as e:
         return jsonify({"message": str(e)}), 500

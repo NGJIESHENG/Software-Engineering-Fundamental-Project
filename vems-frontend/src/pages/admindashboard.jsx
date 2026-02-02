@@ -13,6 +13,8 @@ function AdminDashboard() {
     const [reports, setReports] = useState(null);
     const [logs, setLogs] = useState([]);
     const [selectedRequest, setSelectedRequest] = useState(null);
+    const [reportDates, setReportDates] = useState({ start: '', end: '' });
+    
     
     // Log Filters
     const [logFilters, setLogFilters] = useState({ admin_id: '', action_type: '', date: '' });
@@ -60,12 +62,24 @@ function AdminDashboard() {
         } catch (err) { console.error(err); }
     };
 
-    const fetchReports = async () => {
-        try {
-            const res = await axios.get("http://localhost:5000/api/admin/reports", getHeaders());
+   const fetchReports = async () => {
+    try {
+        const params = new URLSearchParams({
+            start_date: reportDates.start || '',
+            end_date: reportDates.end || ''
+        }).toString();
+        
+        const res = await axios.get(`http://localhost:5000/api/admin/reports?${params}`, getHeaders());
+        
+        if (res.data) {
             setReports(res.data);
-        } catch (err) { console.error(err); }
-    };
+            console.log("Report Data Received:", res.data);
+        }
+    } catch (err) { 
+        console.error("Report Fetch Error:", err.response?.data || err.message);
+        alert("Server Error: Check if the backend is running and the database has data for these dates.");
+    }
+};
 
     const fetchLogs = async () => {
         try {
@@ -381,57 +395,90 @@ function AdminDashboard() {
     );
 
     const renderReports = () => {
-        if (!reports) return <p>Loading reports...</p>;
-        // Helper to find max for simple scaling
-        const maxVenue = Math.max(...reports.top_venues.map(v => v.value), 1);
-        const maxStatus = Math.max(...reports.statuses.map(v => v.value), 1);
+    // 1. Safety Check: Ensure data exists before rendering
+    if (!reports) return <p>Loading reports...</p>;
 
-        return (
-            <div>
-                {/* KPI CARDS */}
-                <div style={{display:'flex', gap:'20px', marginBottom:'30px'}}>
-                    <div style={s.statCard}>
-                        <h4 style={{margin:0, color:'#718096'}}>Total Users</h4>
-                        <h2 style={{fontSize:'36px', color:'#2b6cb0', margin:'10px 0'}}>{reports.total_users}</h2>
-                    </div>
-                    <div style={{...s.statCard, flex: 1, padding: '20px', background: 'white', textAlign: 'center', borderRadius: '8px'}}>
-                        <h4 style={{margin:0, color:'#718096'}}>Role Distribution</h4>
-                        <div style={{marginTop:'10px'}}>
-                            {reports.roles.map(r => <span key={r.name} style={{display:'block', fontSize:'14px'}}><b>{r.name}:</b> {r.value}</span>)}
-                        </div>
-                    </div>
+    // 2. Dynamic Scaling Logic (SDS Section 2.1.13)
+    const maxVenue = Math.max(...reports.top_venues.map(v => v.value), 1);
+    const maxStatus = Math.max(...reports.statuses.map(v => v.value), 1);
+
+    return (
+        <div className="reports-container">
+            {/* 3. FILTER SECTION (UC-13 Normal Flow) */}
+            <div style={{...s.card, display: 'flex', gap: '20px', alignItems: 'flex-end', marginBottom: '20px'}}>
+                <div>
+                    <label style={{display:'block', fontSize:'12px'}}>Start Date</label>
+                    <input 
+                        type="date" 
+                        style={s.input} 
+                        value={reportDates.start} 
+                        onChange={e => setReportDates({...reportDates, start: e.target.value})} 
+                    />
                 </div>
-
-                {/* GRAPHS */}
-                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px'}}>
-                    <div style={s.card}>
-                        <h4>Booking Status Distribution</h4>
-                        <div style={s.barContainer}>
-                            {reports.statuses.map(st => (
-                                <div key={st.name} style={{textAlign:'center', flex:1}}>
-                                    <div style={s.bar((st.value/maxStatus)*100, st.name==='Approved'?'#48bb78':st.name==='Rejected'?'#f56565':'#ed8936')}></div>
-                                    <div style={{marginTop:'5px', fontSize:'12px'}}>{st.name} ({st.value})</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div style={s.card}>
-                        <h4>Top 5 Popular Venues</h4>
-                        <div style={s.barContainer}>
-                            {reports.top_venues.map(v => (
-                                <div key={v.name} style={{textAlign:'center', flex:1}}>
-                                    <div style={s.bar((v.value/maxVenue)*100, '#4299e1')}></div>
-                                    <div style={{marginTop:'5px', fontSize:'12px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', width:'50px'}} title={v.name}>{v.name}</div>
-                                    <div style={{fontSize:'10px', fontWeight:'bold'}}>{v.value}</div>
-                                </div>
-                            ))}
-                        </div>
+                <div>
+                    <label style={{display:'block', fontSize:'12px'}}>End Date</label>
+                    <input 
+                        type="date" 
+                        style={s.input} 
+                        value={reportDates.end} 
+                        onChange={e => setReportDates({...reportDates, end: e.target.value})} 
+                    />
+                </div>
+                <button 
+                    onClick={fetchReports} 
+                    style={{...s.btn, background: '#2b6cb0', height: '40px', marginBottom: '15px'}}
+                >
+                    Generate Report
+                </button>
+            </div>
+            {/* 4. KPI CARDS */}
+            <div style={{display:'flex', gap:'20px', marginBottom:'30px'}}>
+                <div style={s.statCard}>
+                    <h4 style={{margin:0, color:'#718096'}}>Total Users</h4>
+                    <h2 style={{fontSize:'36px', color:'#2b6cb0', margin:'10px 0'}}>{reports.total_users}</h2>
+                </div>
+                <div style={{...s.statCard, flex: 1}}>
+                    <h4 style={{margin:0, color:'#718096'}}>Role Distribution</h4>
+                    <div style={{marginTop:'10px'}}>
+                        {reports.roles.map(r => (
+                            <span key={r.name} style={{display:'block', fontSize:'14px'}}>
+                                <b>{r.name}:</b> {r.value}
+                            </span>
+                        ))}
                     </div>
                 </div>
             </div>
-        );
-    };
+
+            {/* 5. VISUAL CHARTS (Presentation Layer) */}
+            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px'}}>
+                <div style={s.card}>
+                    <h4>Booking Status Distribution</h4>
+                    <div style={s.barContainer}>
+                        {reports.statuses.map(st => (
+                            <div key={st.name} style={{textAlign:'center', flex:1}}>
+                                <div style={s.bar((st.value / maxStatus) * 100, st.name==='Approved' ? '#48bb78' : st.name==='Rejected' ? '#f56565' : '#ed8936')}></div>
+                                <div style={{marginTop:'5px', fontSize:'12px'}}>{st.name} ({st.value})</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div style={s.card}>
+                    <h4>Top 5 Popular Venues</h4>
+                    <div style={s.barContainer}>
+                        {reports.top_venues.map(v => (
+                            <div key={v.name} style={{textAlign:'center', flex:1}}>
+                                <div style={s.bar((v.value / maxVenue) * 100, '#4299e1')}></div>
+                                <div style={{marginTop:'5px', fontSize:'12px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}} title={v.name}>{v.name}</div>
+                                <div style={{fontSize:'10px', fontWeight:'bold'}}>{v.value}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
     const renderLogs = () => (
         <div style={s.card}>
