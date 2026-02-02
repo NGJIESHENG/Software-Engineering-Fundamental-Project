@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 function AdminDashboard() {
     const navigate = useNavigate();
@@ -395,43 +396,26 @@ function AdminDashboard() {
     );
 
     const renderReports = () => {
-    // 1. Safety Check: Ensure data exists before rendering
     if (!reports) return <p>Loading reports...</p>;
-
-    // 2. Dynamic Scaling Logic (SDS Section 2.1.13)
-    const maxVenue = Math.max(...reports.top_venues.map(v => v.value), 1);
-    const maxStatus = Math.max(...reports.statuses.map(v => v.value), 1);
 
     return (
         <div className="reports-container">
-            {/* 3. FILTER SECTION (UC-13 Normal Flow) */}
-            <div style={{...s.card, display: 'flex', gap: '20px', alignItems: 'flex-end', marginBottom: '20px'}}>
+            {/* 1. FILTER SECTION (SDS Use Case 13 Alignment) */}
+            <div style={{...s.card, display: 'flex', gap: '20px', alignItems: 'flex-end', marginBottom: '25px'}}>
                 <div>
-                    <label style={{display:'block', fontSize:'12px'}}>Start Date</label>
-                    <input 
-                        type="date" 
-                        style={s.input} 
-                        value={reportDates.start} 
-                        onChange={e => setReportDates({...reportDates, start: e.target.value})} 
-                    />
+                    <label style={{display: 'block', fontSize: '12px', fontWeight: 'bold'}}>Start Date</label>
+                    <input type="date" style={s.input} value={reportDates.start} onChange={e => setReportDates({...reportDates, start: e.target.value})} />
                 </div>
                 <div>
-                    <label style={{display:'block', fontSize:'12px'}}>End Date</label>
-                    <input 
-                        type="date" 
-                        style={s.input} 
-                        value={reportDates.end} 
-                        onChange={e => setReportDates({...reportDates, end: e.target.value})} 
-                    />
+                    <label style={{display: 'block', fontSize: '12px', fontWeight: 'bold'}}>End Date</label>
+                    <input type="date" style={s.input} value={reportDates.end} onChange={e => setReportDates({...reportDates, end: e.target.value})} />
                 </div>
-                <button 
-                    onClick={fetchReports} 
-                    style={{...s.btn, background: '#2b6cb0', height: '40px', marginBottom: '15px'}}
-                >
+                <button onClick={fetchReports} style={{...s.btn, background: '#2b6cb0', height: '40px', marginBottom: '15px', padding: '0 20px'}}>
                     Generate Report
                 </button>
             </div>
-            {/* 4. KPI CARDS */}
+
+            {/* 2. KPI STAT CARDS */}
             <div style={{display:'flex', gap:'20px', marginBottom:'30px'}}>
                 <div style={s.statCard}>
                     <h4 style={{margin:0, color:'#718096'}}>Total Users</h4>
@@ -449,31 +433,32 @@ function AdminDashboard() {
                 </div>
             </div>
 
-            {/* 5. VISUAL CHARTS (Presentation Layer) */}
+            {/* 3. RECHARTS VISUALIZATIONS (Presentation Layer) */}
             <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px'}}>
-                <div style={s.card}>
-                    <h4>Booking Status Distribution</h4>
-                    <div style={s.barContainer}>
-                        {reports.statuses.map(st => (
-                            <div key={st.name} style={{textAlign:'center', flex:1}}>
-                                <div style={s.bar((st.value / maxStatus) * 100, st.name==='Approved' ? '#48bb78' : st.name==='Rejected' ? '#f56565' : '#ed8936')}></div>
-                                <div style={{marginTop:'5px', fontSize:'12px'}}>{st.name} ({st.value})</div>
-                            </div>
-                        ))}
-                    </div>
+                {/* Booking Status Chart */}
+                <div style={{...s.card, height: '400px'}}>
+                    <h4 style={{marginBottom: '20px'}}>Booking Status Distribution</h4>
+                    <ResponsiveContainer width="100%" height="80%">
+                        <BarChart data={reports.statuses}>
+                            <XAxis dataKey="name" stroke="#718096" fontSize={12} />
+                            <YAxis stroke="#718096" fontSize={12} />
+                            <Tooltip cursor={{fill: '#edf2f7'}} />
+                            <Bar dataKey="value" fill="#48bb78" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
 
-                <div style={s.card}>
-                    <h4>Top 5 Popular Venues</h4>
-                    <div style={s.barContainer}>
-                        {reports.top_venues.map(v => (
-                            <div key={v.name} style={{textAlign:'center', flex:1}}>
-                                <div style={s.bar((v.value / maxVenue) * 100, '#4299e1')}></div>
-                                <div style={{marginTop:'5px', fontSize:'12px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}} title={v.name}>{v.name}</div>
-                                <div style={{fontSize:'10px', fontWeight:'bold'}}>{v.value}</div>
-                            </div>
-                        ))}
-                    </div>
+                {/* Popular Venues Chart */}
+                <div style={{...s.card, height: '400px'}}>
+                    <h4 style={{marginBottom: '20px'}}>Top 5 Popular Venues</h4>
+                    <ResponsiveContainer width="100%" height="80%">
+                        <BarChart data={reports.top_venues}>
+                            <XAxis dataKey="name" stroke="#718096" fontSize={10} interval={0} />
+                            <YAxis stroke="#718096" fontSize={12} />
+                            <Tooltip cursor={{fill: '#edf2f7'}} />
+                            <Bar dataKey="value" fill="#4299e1" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
         </div>
