@@ -955,6 +955,51 @@ def update_booking():
         db.session.rollback() # Rollback in case of error to keep DB clean
         print(f"Error updating booking: {str(e)}")
         return jsonify({'message': 'Internal Server Error', 'error': str(e)}), 500
+    
+@app.route('/api/venues/search-availability', methods=['GET'])
+def search_available_venues():
+    try:
+        date = request.args.get('date')
+        v_type = request.args.get('type')
+        
+        # FIX: Provide a default '0' if capacity is an empty string or None
+        raw_cap = request.args.get('capacity')
+        min_cap = int(raw_cap) if raw_cap and raw_cap.strip() != "" else 0
+
+        req_start = request.args.get('start_time')
+        req_end = request.args.get('end_time')
+
+        # 1. Filter by Type and Capacity
+        query = Venue.query.filter(Venue.Capacity >= min_cap)
+        if v_type and v_type != "":
+            query = query.filter(Venue.Venue_Type == v_type)
+        
+        all_matching_venues = query.all()
+        results = []
+
+        for venue in all_matching_venues:
+            # 2. Check for conflicts
+            conflicts = Booking.query.filter_by(
+                Venue_ID=venue.Venue_ID, 
+                Date=date, 
+                Booking_Status='Approved'
+            ).filter((Booking.Start_Time < req_end) & (Booking.End_Time > req_start)).all()
+
+            results.append({
+                "id": venue.Venue_ID,
+                "name": venue.Venue_Name,
+                "type": venue.Venue_Type,
+                "capacity": venue.Capacity,
+                "is_available": len(conflicts) == 0,
+                "conflicts": [{"event": c.Event_Name} for c in conflicts]
+            })
+
+        return jsonify(results), 200
+    except Exception as e:
+        # LOG the specific error in the terminal for debugging
+        print(f"CRASH ERROR: {str(e)}")
+        return jsonify({"message": str(e)}), 500
+    
 @app.route('/api/notifications/<user_id>', methods=['GET'])
 @jwt_required()
 

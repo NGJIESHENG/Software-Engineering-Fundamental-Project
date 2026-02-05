@@ -123,8 +123,8 @@ function Homepage() {
     const navigationButtons = [
         { 
             id: 1, 
-            name: 'Dashboard', 
-            icon: '📊',
+            name: 'Venue Availability', 
+            icon: '📍',
             path: '/dashboard',
             description: 'View venue availability and statistics'
         },
