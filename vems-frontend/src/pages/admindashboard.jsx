@@ -379,11 +379,12 @@ function AdminDashboard() {
                             <label>Email</label>
                             <input style={s.input} value={userForm.Email} onChange={e=>setUserForm({...userForm, Email: e.target.value})} />
                             <label>Role</label>
-                            <select style={s.input} value={userForm.Role} onChange={e=>setUserForm({...userForm, Role: e.target.value})}>
-                                <option value="Student">Student</option>
-                                <option value="Event Organiser">Event Organiser</option>
-                                <option value="Lecturer">Lecturer</option>
-                            </select>
+                            <div style={{
+                                ...s.input, 
+                                background: '#f1f1f1', padding: '8px', margin: '5px 0 15px', border: '1px solid #ddd', borderRadius: '4px', color: '#666'
+                            }}>
+                                {userForm.Role}
+                            </div>
                             <div style={{textAlign:'right'}}>
                                 <button type="button" onClick={()=>setEditingUser(null)} style={{marginRight:'10px', padding:'8px'}}>Cancel</button>
                                 <button type="submit" style={{padding:'8px 16px', background:'#3182ce', color:'white', border:'none'}}>Save</button>
