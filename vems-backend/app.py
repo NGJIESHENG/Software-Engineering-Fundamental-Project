@@ -357,14 +357,13 @@ def check_availability():
         date = data.get('date')
         venue_id = data.get('venue_id')
         
-        # --- CRITICAL FIX: Ensure 2-digit hour padding (e.g., 8:00 -> 08:00) ---
-        def format_time(t):
-            if not t: return t
+        # Helper to normalize time strings (e.g., "8:00" -> "08:00")
+        def normalize_time(t):
+            if not t: return "00:00"
             return t.zfill(5) if len(t.split(':')[0]) == 1 else t
 
-        start_time = format_time(data.get('start_time'))
-        end_time = format_time(data.get('end_time'))
-        # ----------------------------------------------------------------------
+        req_start = normalize_time(data.get('start_time'))
+        req_end = normalize_time(data.get('end_time'))
         
         venue = Venue.query.filter_by(Venue_ID=venue_id).first()
         if not venue:
@@ -373,20 +372,29 @@ def check_availability():
         if venue.Status != 'Available':
             return jsonify({'available': False, 'reason': f'Venue is currently {venue.Status}'}), 200
         
-        # ScheduleEngine: Overlap Interval Detection
-        overlapping_bookings = Booking.query.filter_by(
+        # We perform the overlap check in Python to handle inconsistent DB time formats ("8:00" vs "08:00")
+        potential_conflicts = Booking.query.filter_by(
             Venue_ID=venue_id,
             Date=date
         ).filter(
-            (Booking.Start_Time < end_time) &
-            (Booking.End_Time > start_time) &
-            (Booking.Booking_Status.in_(['Approved', 'Pending']))
+            Booking.Booking_Status.in_(['Approved', 'Pending'])
         ).all()
         
-        is_available = len(overlapping_bookings) == 0
+        conflicts = []
+        for booking in potential_conflicts:
+            # Normalize DB times
+            b_start = normalize_time(booking.Start_Time)
+            b_end = normalize_time(booking.End_Time)
+            
+            # Accurate Overlap Check: (StartA < EndB) and (EndA > StartB)
+            if b_start < req_end and b_end > req_start:
+                conflicts.append({
+                    'start_time': booking.Start_Time,
+                    'end_time': booking.End_Time,
+                    'status': booking.Booking_Status
+                })
         
-        # DEBUG: Check terminal to see if times are matching correctly
-        print(f"DEBUG: Checking {start_time}-{end_time} against {len(overlapping_bookings)} conflicts")
+        is_available = len(conflicts) == 0
 
         response_data = {
             'available': is_available,
@@ -396,11 +404,7 @@ def check_availability():
         
         if not is_available:
             response_data['reason'] = 'Time slot is already booked'
-            response_data['conflicts'] = [{
-                'start_time': booking.Start_Time,
-                'end_time': booking.End_Time,
-                'status': booking.Booking_Status
-            } for booking in overlapping_bookings]
+            response_data['conflicts'] = conflicts
         
         return jsonify(response_data), 200
         
@@ -490,17 +494,18 @@ def create_booking():
 @jwt_required()
 def get_user_bookings(user_id):
     try:
-        
         user = User.query.filter_by(User_ID=user_id).first()
         if not user:
             return jsonify({"message": "User not found"}), 404
         
+        # Query joins logs, which may produce duplicates if multiple logs exist per booking
         results = db.session.query(
             Booking, 
             Venue.Venue_Name, 
             Venue.Venue_Type, 
             Venue.Capacity, 
-            RequestLog.Reason_Notes
+            RequestLog.Reason_Notes,
+            RequestLog.Action_Time 
         )\
         .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
         .outerjoin(RequestLog, Booking.Booking_ID == RequestLog.Booking_ID)\
@@ -508,28 +513,46 @@ def get_user_bookings(user_id):
         .order_by(Booking.Date.desc())\
         .all()
         
-        bookings_list = []
-        for b, v_name, v_type, v_cap, reason in results:
-            bookings_list.append({
-                'booking_id': b.Booking_ID,
-                'date': b.Date,
-                'start_time': b.Start_Time,
-                'end_time': b.End_Time,
-                'description': b.Description,
-                'status': b.Booking_Status,
-                'submission_date': b.Submission_Date,
-                'event_name': b.Event_Name,
-                'estimated_participants': b.Estimated_Participants,
-                'booking_reason': b.Booking_Reason,
-                'organisation': b.Organisation,
-                'special_requirements': b.Special_Requirements,
-                'contact_name': b.Contact_Name,
-                'contact_gender': b.Contact_Gender,
-                'venue_name': v_name,
-                'venue_type': v_type,
-                'venue_capacity': v_cap,
-                'rejection_reason': reason if b.Booking_Status == 'Rejected' else None
-            })
+        bookings_map = {}
+        
+        for b, v_name, v_type, v_cap, reason, log_time in results:
+            # If we haven't seen this booking, add it
+            if b.Booking_ID not in bookings_map:
+                bookings_map[b.Booking_ID] = {
+                    'booking_id': b.Booking_ID,
+                    'date': b.Date,
+                    'start_time': b.Start_Time,
+                    'end_time': b.End_Time,
+                    'description': b.Description,
+                    'status': b.Booking_Status,
+                    'submission_date': b.Submission_Date,
+                    'event_name': b.Event_Name,
+                    'estimated_participants': b.Estimated_Participants,
+                    'booking_reason': b.Booking_Reason,
+                    'organisation': b.Organisation,
+                    'special_requirements': b.Special_Requirements,
+                    'contact_name': b.Contact_Name,
+                    'contact_gender': b.Contact_Gender,
+                    'venue_name': v_name,
+                    'venue_type': v_type,
+                    'venue_capacity': v_cap,
+                    'rejection_reason': reason if b.Booking_Status == 'Rejected' else None,
+                    '_latest_log_time': log_time # Internal helper to track latest log
+                }
+            else:
+                # If we have seen it, update rejection reason ONLY if this log entry is newer
+                # This ensures we get the most recent rejection note if multiple exist
+                existing = bookings_map[b.Booking_ID]
+                if b.Booking_Status == 'Rejected' and log_time and existing['_latest_log_time'] and log_time > existing['_latest_log_time']:
+                    existing['rejection_reason'] = reason
+                    existing['_latest_log_time'] = log_time
+
+        # Convert map values to list
+        bookings_list = list(bookings_map.values())
+        
+        # Cleanup internal helper key
+        for item in bookings_list:
+            item.pop('_latest_log_time', None)
         
         return jsonify({
             "user": {
@@ -947,6 +970,7 @@ def update_booking():
         booking.Special_Requirements = data.get('special_requirements', booking.Special_Requirements)
         booking.Contact_Name = data.get('contact_name', booking.Contact_Name)
         booking.Contact_Gender = data.get('contact_gender', booking.Contact_Gender)
+        booking.Booking_Status = data.get('booking_status', booking.Booking_Status)
 
         # 4. Commit changes to the database
         db.session.commit()
@@ -964,20 +988,18 @@ def update_booking():
 @app.route('/api/venues/search-availability', methods=['GET'])
 def search_available_venues():
     try:
-        # 1. Clean inputs and fix time padding (e.g., 8:00 -> 08:00)
-        def format_time(t):
-            if not t or ":" not in t: return t
+        def normalize_time(t):
+            if not t: return "00:00"
             return t.zfill(5) if len(t.split(':')[0]) == 1 else t
 
         date = request.args.get('date', '').strip()
-        req_start = format_time(request.args.get('start_time', '').strip())
-        req_end = format_time(request.args.get('end_time', '').strip())
+        req_start = normalize_time(request.args.get('start_time', '').strip())
+        req_end = normalize_time(request.args.get('end_time', '').strip())
         
         raw_cap = request.args.get('capacity', '0')
         min_cap = int(raw_cap) if raw_cap and raw_cap.strip() != "" else 0
         v_type = request.args.get('type')
 
-        # 2. Filter venues by basic stats
         query = Venue.query.filter(Venue.Capacity >= min_cap)
         if v_type and v_type != "":
             query = query.filter(Venue.Venue_Type == v_type)
@@ -986,27 +1008,29 @@ def search_available_venues():
         results = []
 
         for venue in all_matching_venues:
-            
-            conflicts = Booking.query.filter(
+            day_bookings = Booking.query.filter(
                 Booking.Venue_ID == venue.Venue_ID,
                 Booking.Date == date,
                 Booking.Booking_Status == 'Approved'
-            ).filter(
-                (Booking.Start_Time < req_end) & 
-                (Booking.End_Time > req_start)
             ).all()
+
+            actual_conflicts = []
+            for b in day_bookings:
+                b_start = normalize_time(b.Start_Time)
+                b_end = normalize_time(b.End_Time)
+                
+                # Overlap Check
+                if b_start < req_end and b_end > req_start:
+                    actual_conflicts.append(b)
 
             results.append({
                 "id": venue.Venue_ID,
                 "name": venue.Venue_Name,
                 "type": venue.Venue_Type,
                 "capacity": venue.Capacity,
-                "is_available": len(conflicts) == 0, 
-                "conflict_details": [{"event": c.Event_Name, "time": f"{c.Start_Time}-{c.End_Time}"} for c in conflicts]
+                "is_available": len(actual_conflicts) == 0, 
+                "conflict_details": [{"event": c.Event_Name, "time": f"{c.Start_Time}-{c.End_Time}"} for c in actual_conflicts]
             })
-
-        
-        print(f"DEBUG: Search Date: {date} | Range: {req_start} to {req_end}")
 
         return jsonify(results), 200
     except Exception as e:

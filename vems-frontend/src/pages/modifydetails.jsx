@@ -170,7 +170,7 @@ function ModifyDetails() {
         },
         submitButton: {
             padding: '15px 40px',
-            background: '#dd6b20', // Changed to Orange for "Update" feel
+            background: '#dd6b20', 
             color: 'white',
             border: 'none',
             borderRadius: '8px',
@@ -217,7 +217,7 @@ function ModifyDetails() {
         },
         loadingSpinner: {
             display: 'inline-block',
-            width: '40px', // Larger for main loader
+            width: '40px', 
             height: '40px',
             border: '4px solid #e2e8f0',
             borderTop: '4px solid #3182ce',
@@ -286,9 +286,9 @@ function ModifyDetails() {
                     date: data.date,
                     startTime: data.start_time,
                     endTime: data.end_time,
-                    venueName: data.venue_name, // Assuming API returns venue_name
-                    venueType: data.venue_type, // Assuming API returns venue_type
-                    venueCapacity: data.venue_capacity // Assuming API returns capacity
+                    venueName: data.venue_name, 
+                    venueType: data.venue_type, 
+                    venueCapacity: data.venue_capacity 
                 });
 
             } catch (error) {
@@ -379,9 +379,8 @@ function ModifyDetails() {
                 organisation: formData.organisation || '',
                 special_requirements: formData.specialRequirements || '',
                 contact_name: formData.name,
-                contact_gender: formData.gender
-                // Note: We are usually NOT updating date/venue/time here to avoid conflicts.
-                // If date change is needed, it's usually a "Reschedule" feature.
+                contact_gender: formData.gender,
+                booking_status: 'Pending'
             };
 
             console.log('📤 Updating booking:', updateRequest);
@@ -395,7 +394,7 @@ function ModifyDetails() {
             });
             
             if (response.status === 200) {
-                alert(`✅ Booking updated successfully!`);
+                alert(`✅ Booking updated successfully! Status reset to Pending.`);
                 
                 // Return to booking history or dashboard
                 navigate('/my-booking', { 
