@@ -13,6 +13,7 @@ function Help() {
   const headerStyle = {
     color: '#18a8f5',
     marginBottom: '20px',
+    fontFamily: 'Arial, sans-serif',
     fontSize: '32px',
     fontWeight: '700',
   };
@@ -33,6 +34,7 @@ function Help() {
       color: '#1e3a8a',
       padding: '15px',
       borderRadius: '8px',
+      fontFamily: 'Arial, sans-serif',
       fontWeight: '600',
       fontSize: '16px',
     },
@@ -42,6 +44,7 @@ function Help() {
       borderLeft: '5px solid #4f46e5',
       marginTop: '10px',
       borderRadius: '5px',
+      fontFamily: 'Arial, sans-serif',
       fontSize: '15px',
       color: '#333333',
       lineHeight: '1.6',
