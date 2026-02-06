@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 function Dashboard() {
     const navigate = useNavigate();
 
-    // --- STATE MANAGEMENT ---
+    
     const [searchParams, setSearchParams] = useState({ 
         date: '', 
         type: '', 
@@ -17,7 +17,7 @@ function Dashboard() {
     const [hasSearched, setHasSearched] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    // --- STYLES ---
+    
     const s = {
         container: { maxWidth: '1000px', margin: '40px auto', padding: '30px', fontFamily: 'Arial, sans-serif', background: '#f8fafc' },
         header: { textAlign: 'center', color: '#2c5282', marginBottom: '30px' },
@@ -50,7 +50,7 @@ function Dashboard() {
         })
     };
 
-    // --- SEARCH HANDLER ---
+    
     const handleSearch = async () => {
         if (!searchParams.date) return alert("Please select a date to check availability.");
         
@@ -58,7 +58,7 @@ function Dashboard() {
         setHasSearched(true);
         
         try {
-            // Sends Date, Type, Capacity, Start Time, and End Time to backend
+            
             const res = await axios.get(`http://localhost:5000/api/venues/search-availability`, { 
                 params: searchParams 
             });
@@ -75,7 +75,7 @@ function Dashboard() {
         <div style={s.container}>
             <h1 style={s.header}>Venue Explorer & Availability</h1>
 
-            {/* 1. FILTER SECTION (Planning Utility) */}
+            
             <div style={s.searchCard}>
                 <div style={s.inputGroup}>
                     <label style={s.label}>Required Date</label>
@@ -107,7 +107,7 @@ function Dashboard() {
                 <button style={s.btn} onClick={handleSearch}>Find Venues</button>
             </div>
 
-            {/* 2. RESULTS DISPLAY (Conflict Detection) */}
+          
             {hasSearched && (
                 isLoading ? (
                     <div style={{textAlign: 'center', padding: '40px'}}>Searching availability...</div>

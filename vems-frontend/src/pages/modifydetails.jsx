@@ -6,11 +6,11 @@ function ModifyDetails() {
     const location = useLocation();
     const navigate = useNavigate();
     
-    // We expect the booking ID to be passed in state, e.g., from a "Manage Bookings" list
+   
     const bookingId = location.state?.bookingId;
 
     const [isLoading, setIsLoading] = useState(true);
-    const [summaryData, setSummaryData] = useState({}); // Stores read-only info (Venue, Date, Time)
+    const [summaryData, setSummaryData] = useState({}); 
     
     const [formData, setFormData] = useState({
         name: '',
@@ -242,7 +242,7 @@ function ModifyDetails() {
         }
     `;
 
-    // 1. Fetch Existing Booking Details on Mount
+    
     useEffect(() => {
         const fetchBookingDetails = async () => {
             if (!bookingId) {
@@ -281,7 +281,7 @@ function ModifyDetails() {
                     specialRequirements: data.special_requirements || ''
                 });
 
-                // Set Read-Only Summary Data
+                
                 setSummaryData({
                     date: data.date,
                     startTime: data.start_time,
@@ -369,9 +369,9 @@ function ModifyDetails() {
                 return;
             }
 
-            // Prepare update payload
+           
             const updateRequest = {
-                booking_id: bookingId, // Identify which booking to update
+                booking_id: bookingId, 
                 description: formData.bookingDetails,
                 event_name: formData.eventName,
                 estimated_participants: parseInt(formData.estimatedParticipants) || 0,
@@ -385,7 +385,7 @@ function ModifyDetails() {
 
             console.log('📤 Updating booking:', updateRequest);
             
-            // 2. Call Update API
+           
             const response = await axios.put('http://localhost:5000/api/update-booking', updateRequest, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -396,7 +396,7 @@ function ModifyDetails() {
             if (response.status === 200) {
                 alert(`✅ Booking updated successfully! Status reset to Pending.`);
                 
-                // Return to booking history or dashboard
+               
                 navigate('/my-booking', { 
                     state: { 
                         message: `Booking for "${formData.eventName}" updated successfully.`
@@ -414,7 +414,7 @@ function ModifyDetails() {
     };
 
     const handleBack = () => {
-        navigate(-1); // Go back to previous page
+        navigate(-1); 
     };
 
     if (isLoading) {
@@ -460,7 +460,7 @@ function ModifyDetails() {
                 </div>
             )}
 
-            {/* Read Only Summary Section */}
+            
             <div style={styles.section}>
                 <h2 style={styles.sectionTitle}>
                     <span role="img" aria-label="summary">🔒</span> Fixed Booking Details
@@ -595,7 +595,7 @@ function ModifyDetails() {
                                 onChange={handleInputChange}
                                 placeholder="Number of people"
                                 min="1"
-                                // Fallback capacity to 9999 if not loaded yet
+                               
                                 max={summaryData.venueCapacity || 9999}
                                 disabled={isSubmitting}
                             />

@@ -5,11 +5,11 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 
 function AdminDashboard() {
     const navigate = useNavigate();
-    const [activeSection, setActiveSection] = useState('pending'); // pending, schedule, users, reports, logs
+    const [activeSection, setActiveSection] = useState('pending'); 
 
-    // --- STATE VARIABLES ---
-    const [bookings, setBookings] = useState([]); // Pending approvals
-    const [scheduleEvents, setScheduleEvents] = useState([]); // All events
+    
+    const [bookings, setBookings] = useState([]); 
+    const [scheduleEvents, setScheduleEvents] = useState([]); 
     const [users, setUsers] = useState([]);
     const [reports, setReports] = useState(null);
     const [logs, setLogs] = useState([]);
@@ -17,20 +17,20 @@ function AdminDashboard() {
     const [reportDates, setReportDates] = useState({ start: '', end: '' });
     
     
-    // Log Filters
+    
     const [logFilters, setLogFilters] = useState({ admin_id: '', action_type: '', date: '' });
     
-    // Modal State
+    
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({});
     
-    // User Edit State
+    
     const [editingUser, setEditingUser] = useState(null);
     const [userForm, setUserForm] = useState({});
 
     useEffect(() => {
-        // Initial Fetch based on section
+        
         if (activeSection === 'pending') fetchPendingBookings();
         if (activeSection === 'schedule') fetchMasterSchedule();
         if (activeSection === 'users') fetchUsers();
@@ -38,7 +38,7 @@ function AdminDashboard() {
         if (activeSection === 'logs') fetchLogs();
     }, [activeSection]);
 
-    // --- API CALLS ---
+    
     const getToken = () => localStorage.getItem('token');
     const getHeaders = () => ({ headers: { 'Authorization': `Bearer ${getToken()}` } });
 
@@ -90,7 +90,7 @@ function AdminDashboard() {
         } catch (err) { console.error(err); }
     };
 
-    // --- HANDLERS: PENDING APPROVALS ---
+    
     const handleDecision = async (bookingId, decision) => {
         let reason = "";
         if (decision === 'Rejected') {
@@ -123,7 +123,7 @@ function AdminDashboard() {
     }
 };
 
-    // --- HANDLERS: SCHEDULE ---
+    
     const handleEventClick = (event) => {
         setSelectedEvent(event);
         setEditForm({ 
@@ -159,7 +159,7 @@ function AdminDashboard() {
         } catch (err) { alert("Update failed"); }
     };
 
-    // --- HANDLERS: USERS ---
+   
     const handleDeleteUser = async (userId) => {
         if (!window.confirm("Are you sure you want to delete this user?")) return;
         try {
@@ -192,7 +192,7 @@ function AdminDashboard() {
         } catch (err) { alert("Update failed"); }
     };
 
-    // --- STYLES ---
+    
     const s = {
         container: { padding: '30px', fontFamily: 'Arial, sans-serif', background: '#f8f9fa', minHeight: '100vh' },
         nav: { display: 'flex', gap: '10px', marginBottom: '30px', borderBottom: '2px solid #ddd', paddingBottom: '10px' },
@@ -213,7 +213,7 @@ function AdminDashboard() {
         statCard: { flex: 1, padding: '20px', background: 'white', textAlign: 'center', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }
     };
 
-    // --- RENDER SECTIONS ---
+   
 
     const renderPending = () => (
         <div style={s.card}>
@@ -305,7 +305,7 @@ function AdminDashboard() {
                 </tbody>
             </table>
 
-            {/* EVENT MODAL */}
+            
             {selectedEvent && (
                 <div style={s.modal} onClick={() => setSelectedEvent(null)}>
                     <div style={s.modalContent} onClick={e => e.stopPropagation()}>
@@ -368,7 +368,7 @@ function AdminDashboard() {
                 </tbody>
             </table>
 
-            {/* USER EDIT MODAL */}
+            
             {editingUser && (
                 <div style={s.modal} onClick={() => setEditingUser(null)}>
                     <div style={s.modalContent} onClick={e => e.stopPropagation()}>
@@ -401,7 +401,7 @@ function AdminDashboard() {
 
     return (
         <div className="reports-container">
-            {/* 1. FILTER SECTION (SDS Use Case 13 Alignment) */}
+            
             <div style={{...s.card, display: 'flex', gap: '20px', alignItems: 'flex-end', marginBottom: '25px'}}>
                 <div>
                     <label style={{display: 'block', fontSize: '12px', fontWeight: 'bold'}}>Start Date</label>
@@ -416,7 +416,7 @@ function AdminDashboard() {
                 </button>
             </div>
 
-            {/* 2. KPI STAT CARDS */}
+           
             <div style={{display:'flex', gap:'20px', marginBottom:'30px'}}>
                 <div style={s.statCard}>
                     <h4 style={{margin:0, color:'#718096'}}>Total Users</h4>
@@ -434,7 +434,7 @@ function AdminDashboard() {
                 </div>
             </div>
 
-            {/* 3. RECHARTS VISUALIZATIONS (Presentation Layer) */}
+            
             <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'20px'}}>
                 {/* Booking Status Chart */}
                 <div style={{...s.card, height: '400px'}}>
@@ -449,7 +449,7 @@ function AdminDashboard() {
                     </ResponsiveContainer>
                 </div>
 
-                {/* Popular Venues Chart */}
+               
                 <div style={{...s.card, height: '400px'}}>
                     <h4 style={{marginBottom: '20px'}}>Top 5 Popular Venues</h4>
                     <ResponsiveContainer width="100%" height="80%">
@@ -555,7 +555,7 @@ function AdminDashboard() {
                 <button onClick={() => { localStorage.clear(); navigate('/login'); }} style={{background:'#e53e3e', color:'white', border:'none', padding:'8px 16px', borderRadius:'4px', cursor:'pointer'}}>Logout</button>
             </div>
             
-            {/* NAVIGATION */}
+            
             <div style={s.nav}>
                 <button onClick={() => setActiveSection('pending')} style={s.navBtn(activeSection === 'pending')}>Pending Approvals</button>
                 <button onClick={() => setActiveSection('schedule')} style={s.navBtn(activeSection === 'schedule')}>Event Schedule</button>
@@ -564,7 +564,7 @@ function AdminDashboard() {
                 <button onClick={() => setActiveSection('logs')} style={s.navBtn(activeSection === 'logs')}>Log History</button>
             </div>
 
-            {/* CONTENT AREA */}
+           
             {activeSection === 'pending' && renderPending()}
             {activeSection === 'schedule' && renderSchedule()}
             {activeSection === 'users' && renderUsers()}

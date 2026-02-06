@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 function LoginPage() {
     const navigate = useNavigate();
     
-    // FIX: Initialize with empty strings to prevent uncontrolled->controlled warning
+    
     const [formData, setFormData] = useState({
         User_ID: '',
         Password: ''
@@ -23,7 +23,7 @@ function LoginPage() {
             });
             const data = await response.json();
             if (response.ok) {
-                // Store minimal data in localStorage
+                
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user_id', data.user.User_ID);
                 localStorage.setItem('currentUser', JSON.stringify(data.user));

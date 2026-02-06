@@ -22,13 +22,12 @@ jwt = JWTManager(app)
 SESSION_TYPE = 'filesystem'
 SESSION_PERMANENT = False
 
-app.config['JWT_SECRET_KEY'] = 'IYfbisbegsougbef4t98473yt934hpGBfiebgAAAA' # New secret for tokens
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1) # Token expires in 1 hour
-
+app.config['JWT_SECRET_KEY'] = 'IYfbisbegsougbef4t98473yt934hpGBfiebgAAAA'
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1) 
 app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(basedir,'vems.db')
 db = SQLAlchemy(app)
 
-class User(db.Model, UserMixin): #, UserMixin
+class User(db.Model, UserMixin): 
     User_ID = db.Column(db.String(20), unique=True,  primary_key=True)
     Name = db.Column(db.String(100), nullable=False)
     Email = db.Column(db.String(100), unique=True, nullable=False)
@@ -134,7 +133,6 @@ def register():
         db.session.rollback()
         return jsonify({"message": "Internal Server Error"}), 500
     
-# REPLACE your login endpoint in app.py
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -148,7 +146,7 @@ def login():
         if user and bcrypt.check_password_hash(user.Password, password):
             login_user(user)
             
-            # FIX: identity must be a STRING, not a dict
+            
             access_token = create_access_token(identity=user.User_ID)
             
             return jsonify({
@@ -252,7 +250,7 @@ def get_venue_schedule():
             "type": venue.Venue_Type
         }
 
-        # 2. Get ONLY Approved Bookings for this specific venue and date
+       
         bookings = Booking.query.filter_by(Venue_ID=venue_id, Date=date_str, Booking_Status='Approved')\
             .order_by(Booking.Start_Time.asc()).all()
 
@@ -275,12 +273,12 @@ def get_venue_schedule():
 @app.route('/api/bookings-by-date', methods=['GET'])
 def get_bookings_by_date():
     try:
-        date_str = request.args.get('date') # Expects YYYY-MM-DD
+        date_str = request.args.get('date') 
         
         if not date_str:
             return jsonify({"message": "Date parameter is required"}), 400
 
-        # Query bookings for this date, join with Venue to get names
+       
         bookings = db.session.query(Booking, Venue.Venue_Name, Venue.Venue_Type)\
             .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
             .filter(Booking.Date == date_str)\
@@ -357,7 +355,7 @@ def check_availability():
         date = data.get('date')
         venue_id = data.get('venue_id')
         
-        # Helper to normalize time strings (e.g., "8:00" -> "08:00")
+        
         def normalize_time(t):
             if not t: return "00:00"
             return t.zfill(5) if len(t.split(':')[0]) == 1 else t
@@ -372,7 +370,7 @@ def check_availability():
         if venue.Status != 'Available':
             return jsonify({'available': False, 'reason': f'Venue is currently {venue.Status}'}), 200
         
-        # We perform the overlap check in Python to handle inconsistent DB time formats ("8:00" vs "08:00")
+        
         potential_conflicts = Booking.query.filter_by(
             Venue_ID=venue_id,
             Date=date
@@ -382,11 +380,11 @@ def check_availability():
         
         conflicts = []
         for booking in potential_conflicts:
-            # Normalize DB times
+            
             b_start = normalize_time(booking.Start_Time)
             b_end = normalize_time(booking.End_Time)
             
-            # Accurate Overlap Check: (StartA < EndB) and (EndA > StartB)
+            
             if b_start < req_end and b_end > req_start:
                 conflicts.append({
                     'start_time': booking.Start_Time,
@@ -498,7 +496,7 @@ def get_user_bookings(user_id):
         if not user:
             return jsonify({"message": "User not found"}), 404
         
-        # Query joins logs, which may produce duplicates if multiple logs exist per booking
+       
         results = db.session.query(
             Booking, 
             Venue.Venue_Name, 
@@ -516,7 +514,7 @@ def get_user_bookings(user_id):
         bookings_map = {}
         
         for b, v_name, v_type, v_cap, reason, log_time in results:
-            # If we haven't seen this booking, add it
+            
             if b.Booking_ID not in bookings_map:
                 bookings_map[b.Booking_ID] = {
                     'booking_id': b.Booking_ID,
@@ -537,20 +535,19 @@ def get_user_bookings(user_id):
                     'venue_type': v_type,
                     'venue_capacity': v_cap,
                     'rejection_reason': reason if b.Booking_Status == 'Rejected' else None,
-                    '_latest_log_time': log_time # Internal helper to track latest log
+                    '_latest_log_time': log_time
                 }
             else:
-                # If we have seen it, update rejection reason ONLY if this log entry is newer
-                # This ensures we get the most recent rejection note if multiple exist
+                
                 existing = bookings_map[b.Booking_ID]
                 if b.Booking_Status == 'Rejected' and log_time and existing['_latest_log_time'] and log_time > existing['_latest_log_time']:
                     existing['rejection_reason'] = reason
                     existing['_latest_log_time'] = log_time
 
-        # Convert map values to list
+        
         bookings_list = list(bookings_map.values())
         
-        # Cleanup internal helper key
+        
         for item in bookings_list:
             item.pop('_latest_log_time', None)
         
@@ -616,22 +613,22 @@ def populate_initial_data():
         print("Populating initial data...")
         
         venue_data = [
-            # Halls
+           
             {'Venue_Name': 'DTC Grand Hall', 'Venue_Type': 'Hall', 'Capacity': 5000, 'Status': 'Available'},
             {'Venue_Name': 'Multi-purpose Hall', 'Venue_Type': 'Hall', 'Capacity': 200, 'Status': 'Available'},
             
-            # Lecture Halls
+           
             {'Venue_Name': 'Lecture Hall CNMX1001', 'Venue_Type': 'Lecture Hall', 'Capacity': 120, 'Status': 'Available'},
             {'Venue_Name': 'Lecture Hall CNMX1002', 'Venue_Type': 'Lecture Hall', 'Capacity': 120, 'Status': 'Available'},
             {'Venue_Name': 'Lecture Hall CNMX1003', 'Venue_Type': 'Lecture Hall', 'Capacity': 120, 'Status': 'Available'},
             {'Venue_Name': 'Lecture Hall CNMX1004', 'Venue_Type': 'Lecture Hall', 'Capacity': 120, 'Status': 'Available'},
             {'Venue_Name': 'Lecture Hall CNMX1005', 'Venue_Type': 'Lecture Hall', 'Capacity': 120, 'Status': 'Available'},
             
-            # Sports Facility
+           
             {'Venue_Name': 'Swimming Pool', 'Venue_Type': 'Sports Facility', 'Capacity': 50, 'Status': 'Available'},
             {'Venue_Name': 'Basketball Court', 'Venue_Type': 'Sports Facility', 'Capacity': 100, 'Status': 'Available'},
             
-            # FCI Computer Labs
+            
             {'Venue_Name': 'CQAR 1001', 'Venue_Type': 'FCI', 'Capacity': 30, 'Status': 'Available'},
             {'Venue_Name': 'CQAR 1002', 'Venue_Type': 'FCI', 'Capacity': 30, 'Status': 'Available'},
             {'Venue_Name': 'CQAR 1003', 'Venue_Type': 'FCI', 'Capacity': 30, 'Status': 'Available'},
@@ -679,7 +676,7 @@ def get_all_bookings():
     
 @app.route('/api/admin/master-schedule', methods=['GET'])
 def get_master_schedule():
-    # Returns ONLY APPROVED bookings for the schedule view
+    
     try:
         bookings = db.session.query(Booking, Venue.Venue_Name, User.Name, User.User_ID)\
             .join(Venue, Booking.Venue_ID == Venue.Venue_ID)\
@@ -763,8 +760,7 @@ def delete_user(user_id):
     try:
         user = User.query.get(user_id)
         if not user: return jsonify({"message": "User not found"}), 404
-        # Note: You might need to handle cascading deletes (bookings/logs) depending on DB strictness
-        # For now we just delete the user.
+
         db.session.delete(user)
         db.session.commit()
         return jsonify({"message": "User deleted successfully"}), 200
@@ -777,18 +773,18 @@ def get_system_reports():
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date')
 
-        # 1. Total Users (Unfiltered)
+       
         total_users = User.query.count()
         role_dist = db.session.query(User.Role, db.func.count(User.Role)).group_by(User.Role).all()
 
-        # 2. Filtered Status Distribution (UC-13)
+
         status_query = db.session.query(Booking.Booking_Status, db.func.count(Booking.Booking_ID))
         if start_date and end_date:
             status_query = status_query.filter(Booking.Date.between(start_date, end_date))
         
         status_dist = status_query.group_by(Booking.Booking_Status).all()
 
-        # 3. Filtered Top 5 Venues (UC-13)
+       
         venue_query = db.session.query(Venue.Venue_Name, db.func.count(Booking.Booking_ID))\
             .join(Venue, Booking.Venue_ID == Venue.Venue_ID)
         
@@ -810,11 +806,10 @@ def get_system_reports():
 @app.route('/api/admin/logs', methods=['GET'])
 def get_logs():
     try:
-        # Filters
+       
         admin_id = request.args.get('admin_id')
         action_type = request.args.get('action_type')
-        date = request.args.get('date') # Filter by date part of Action_Time
-        
+        date = request.args.get('date') 
         query = RequestLog.query
         
         if admin_id:
@@ -822,7 +817,6 @@ def get_logs():
         if action_type:
             query = query.filter(RequestLog.Action_Type == action_type)
         if date:
-            # Assumes Action_Time stored as "YYYY-MM-DD HH:MM:SS"
             query = query.filter(RequestLog.Action_Time.like(f"{date}%"))
             
         logs = query.order_by(RequestLog.Action_Time.desc()).all()
@@ -911,22 +905,16 @@ def get_booking_details():
         if not result:
             return jsonify({'message': 'Booking not found'}), 404
 
-        booking, venue = result  # Unpack the tuple returned by the query
-
-        # 3. Construct the response object
-        # Keys here match exactly what your React 'setFormData' and 'setSummaryData' expect
+        booking, venue = result  
         response_data = {
-            # Meta / Summary Data
             "booking_id": booking.Booking_ID,
             "status": booking.Booking_Status,
             "date": booking.Date if booking.Date else None,
             "start_time": str(booking.Start_Time),
             "end_time": str(booking.End_Time),
             "venue_name": venue.Venue_Name,
-            "venue_type": getattr(venue, 'Venue_Type', 'N/A'), # Use getattr in case column is missing
-            "venue_capacity": venue.Capacity,
+            "venue_type": getattr(venue, 'Venue_Type', 'N/A'), 
 
-            # Form Data Fields
             "contact_name": booking.Contact_Name,
             "contact_gender": booking.Contact_Gender,
             "booking_reason": booking.Booking_Reason,
@@ -947,21 +935,20 @@ def get_booking_details():
 @jwt_required()
 def update_booking():
     try:
-        # 1. Get JSON data from the request body
+        
         data = request.get_json()
         booking_id = data.get('booking_id')
 
         if not booking_id:
             return jsonify({'message': 'Booking ID is required'}), 400
 
-        # 2. Find the existing booking in the database
+       
         booking = db.session.query(Booking).filter(Booking.Booking_ID == booking_id).first()
 
         if not booking:
             return jsonify({'message': 'Booking not found'}), 404
 
-        # 3. Update the fields
-        # We use .get() to only update if the new value is provided, otherwise keep existing
+        
         booking.Description = data.get('description', booking.Description)
         booking.Event_Name = data.get('event_name', booking.Event_Name)
         booking.Estimated_Participants = data.get('estimated_participants', booking.Estimated_Participants)
@@ -972,7 +959,7 @@ def update_booking():
         booking.Contact_Gender = data.get('contact_gender', booking.Contact_Gender)
         booking.Booking_Status = data.get('booking_status', booking.Booking_Status)
 
-        # 4. Commit changes to the database
+       
         db.session.commit()
 
         return jsonify({
@@ -981,7 +968,7 @@ def update_booking():
         }), 200
 
     except Exception as e:
-        db.session.rollback() # Rollback in case of error to keep DB clean
+        db.session.rollback() 
         print(f"Error updating booking: {str(e)}")
         return jsonify({'message': 'Internal Server Error', 'error': str(e)}), 500
     
@@ -1019,7 +1006,6 @@ def search_available_venues():
                 b_start = normalize_time(b.Start_Time)
                 b_end = normalize_time(b.End_Time)
                 
-                # Overlap Check
                 if b_start < req_end and b_end > req_start:
                     actual_conflicts.append(b)
 

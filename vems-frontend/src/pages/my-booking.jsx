@@ -14,7 +14,7 @@ function MyBooking() {
     const [user, setUser] = useState(null);
     const [allBookings, setAllBookings] = useState([]);
 
-    // --- INTERNAL STYLES ---
+    
     const styles = {
         container: { maxWidth: '1200px', margin: '40px auto', padding: '30px', background: 'white', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)', fontFamily: 'Arial, sans-serif' },
         header: { textAlign: 'center', marginBottom: '30px', borderBottom: '2px solid #e2e8f0', paddingBottom: '20px' },
@@ -98,7 +98,7 @@ function MyBooking() {
 
             <button style={styles.createButton} onClick={() => navigate('/booking')}>+ Create New Booking</button>
 
-            {/* TAB NAVIGATION */}
+           
             <div style={styles.tabs}>
                 {['Pending', 'Approved', 'Rejected'].map(t => (
                     <button 
@@ -115,7 +115,7 @@ function MyBooking() {
                 ))}
             </div>
 
-            {/* LISTING */}
+           
             {isLoading ? <p style={{ textAlign: 'center' }}>Loading...</p> : (
                 <div style={styles.bookingGrid}>
                     {currentBookings.map((b) => (
@@ -142,7 +142,7 @@ function MyBooking() {
                 </div>
             )}
 
-            {/* MODAL */}
+           
             {selectedBooking && (
                 <div style={styles.modalOverlay} onClick={() => setSelectedBooking(null)}>
                     <div style={styles.modalContainer} onClick={e => e.stopPropagation()}>

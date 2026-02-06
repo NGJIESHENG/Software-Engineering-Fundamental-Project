@@ -5,17 +5,16 @@ import axios from 'axios';
 function Calendar() {
     const navigate = useNavigate();
     
-    // State for navigation (Month/Year view)
+    
     const [viewDate, setViewDate] = useState(new Date());
     
-    // State for the specific selected date (clicked by user)
+   
     const [selectedDate, setSelectedDate] = useState(new Date());
     
-    // State for bookings
     const [bookings, setBookings] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Helpers
+   
     const months = [
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
@@ -23,7 +22,7 @@ function Calendar() {
     
     const years = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i); // Current year +/- 5
 
-    // Fetch bookings when selectedDate changes
+   
     useEffect(() => {
         fetchBookings(selectedDate);
     }, [selectedDate]);
@@ -31,7 +30,7 @@ function Calendar() {
     const fetchBookings = async (dateObj) => {
         setIsLoading(true);
         try {
-            // Format date to YYYY-MM-DD manually to avoid timezone shifts
+            
             const offset = dateObj.getTimezoneOffset();
             const localDate = new Date(dateObj.getTime() - (offset * 60 * 1000));
             const dateStr = localDate.toISOString().split('T')[0];
@@ -63,7 +62,7 @@ function Calendar() {
         setSelectedDate(newSelected);
     };
 
-    // --- STYLES ---
+    
     const pageStyle = {
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #2419F0, #6F58FF)',
@@ -123,26 +122,26 @@ function Calendar() {
         padding: '15px',
         borderRadius: '8px',
         marginBottom: '10px',
-        borderLeft: '4px solid #48bb78', // Fixed to Green (Approved)
+        borderLeft: '4px solid #48bb78', 
         boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
     };
 
-    // Calendar Logic
+    
     const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
     const firstDayOfMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay();
 
     const renderDays = () => {
         const days = [];
         
-        // Empty slots for days before start of month
+        
         for (let i = 0; i < firstDayOfMonth; i++) {
             days.push(<div key={`empty-${i}`}></div>);
         }
         
-        // Actual days
+        
         const totalDays = daysInMonth(viewDate.getFullYear(), viewDate.getMonth());
         
         for (let d = 1; d <= totalDays; d++) {
@@ -184,7 +183,7 @@ function Calendar() {
         <div style={pageStyle}>
             <div style={calendarCard}>
                 
-                {/* Header Controls */}
+              
                 <div style={controlPanel}>
                     <button onClick={() => navigate('/homepage')} style={{ padding: '8px 16px', cursor: 'pointer', borderRadius: '5px', border: '1px solid #718096', background: 'white', color: '#4a5568' }}>
                         ← Back
@@ -205,7 +204,7 @@ function Calendar() {
                     </div>
                 </div>
 
-                {/* Calendar Grid */}
+              
                 <div>
                     <div style={gridHeader}>
                         <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
@@ -215,7 +214,7 @@ function Calendar() {
                     </div>
                 </div>
 
-                {/* Selected Date Details */}
+               
                 <div style={bookingsSection}>
                     <h3 style={{ marginTop: 0, color: '#2d3748', borderBottom: '2px solid #cbd5e0', paddingBottom: '10px' }}>
                         📅 Approved Events for {formatDateDisplay(selectedDate)}
