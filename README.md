@@ -30,7 +30,7 @@ Ensure you have the following installed:
 Navigate to the `vems-backend` directory:
 - bash
 - cd vems-backend
-- pip install -r all requirement.txt
+- pip install -r requirement.txt
 - python app.py
 
 ### 3. Frontend Setup
