@@ -1,0 +1,7 @@
+Flask
+Flask-SQLAlchemy
+Flask-Cors
+Flask-Bcrypt
+Flask-Login
+Flask-Session
+Flask-JWT-Extended
