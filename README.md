@@ -28,7 +28,7 @@ Ensure you have the following installed:
 
 ### 2. Backend Setup
 Navigate to the `vems-backend` directory:
-```bash
+bash
 cd vems-backend
 pip install -r all requirement.txt
 python app.py
@@ -36,7 +36,10 @@ python app.py
 ### 3. Frontend Setup
 Navigate to the vems-frontend directory:
 
-```bash
+bash
+cd vems-frontend
+npm install
+npm start
 cd vems-frontend
 npm install
 npm start
